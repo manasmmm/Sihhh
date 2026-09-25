@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+:root {
+  --bg-dark: #060a10;
+  --bg-dark-alt: #0b1120;
+  --panel-bg: rgba(12, 20, 35, 0.88);
+  --panel-border: rgba(79, 209, 197, 0.12);
+  --panel-hover: rgba(79, 209, 197, 0.22);
+  --card-bg: rgba(16, 26, 46, 0.92);
+  --accent-teal: #4fd1c5;
+  --accent-cyan: #38bdf8;
+  --accent-blue: #3b82f6;
+  --accent-orange: #fb923c;
+  --text-main: #f0f4f8;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --glow-teal: 0 0 20px rgba(79, 209, 197, 0.15), 0 0 60px rgba(79, 209, 197, 0.06);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  user-select: none;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Glassmorphism Panels ── */
+.copernicus-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.copernicus-panel:hover {
+  border-color: rgba(79, 209, 197, 0.28);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    var(--glow-teal),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ── Custom Scrollbars ── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(79, 209, 197, 0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-teal);
+}
+
+/* ── Leaflet Dark Theme Overrides ── */
+.leaflet-container {
+  background-color: #060a10 !important;
+  font-family: inherit;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid rgba(79, 209, 197, 0.15) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(79, 209, 197, 0.05) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: rgba(12, 20, 35, 0.92) !important;
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid rgba(79, 209, 197, 0.08) !important;
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: rgba(79, 209, 197, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(6, 10, 16, 0.85) !important;
+  color: #475569 !important;
+  font-size: 9px !important;
+  backdrop-filter: blur(8px);
+  border-radius: 4px 0 0 0 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #64748b !important;
+  text-decoration: none;
+}
+
+/* ── Leaflet Popup Dark Theme ── */
+.leaflet-popup-content-wrapper {
+  background: rgba(12, 20, 35, 0.95) !important;
+  border: 1px solid rgba(79, 209, 197, 0.2) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 16px rgba(79, 209, 197, 0.08) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(12, 20, 35, 0.95) !important;
+  border: 1px solid rgba(79, 209, 197, 0.15) !important;
+}
+
+/* ── Copernicus Tooltip ── */
+.copernicus-tooltip {
+  background: rgba(12, 20, 35, 0.95) !important;
+  border: 1px solid rgba(79, 209, 197, 0.3) !important;
+  border-radius: 8px !important;
+  color: #f0f4f8 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(79, 209, 197, 0.06) !important;
+}
+
+.copernicus-tooltip::before {
+  border-top-color: rgba(79, 209, 197, 0.3) !important;
+}
+
+/* ── Custom Map Marker Pins ── */
+.custom-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 16px currentColor, 0 0 40px currentColor, 0 2px 8px rgba(0, 0, 0, 0.8);
+  animation: pulse-pin 2.5s infinite ease-in-out;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.custom-pin:hover {
+  transform: scale(1.2);
+}
+
+.argo-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #7dd3fc, #38bdf8, #0284c7);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 10px #38bdf8, 0 0 24px rgba(56, 189, 248, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.argo-pin:hover {
+  transform: scale(1.5);
+  box-shadow: 0 0 16px #38bdf8, 0 0 36px rgba(56, 189, 248, 0.5);
+}
+
+@keyframes pulse-pin {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px currentColor, 0 0 30px currentColor, 0 2px 8px rgba(0, 0, 0, 0.8);
+  }
+  50% {
+    transform: scale(1.12);
+    box-shadow: 0 0 20px currentColor, 0 0 50px currentColor, 0 2px 8px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* ── Custom Range Input Styling ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, rgba(79, 209, 197, 0.15), rgba(56, 189, 248, 0.25));
+  border: 1px solid rgba(79, 209, 197, 0.1);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #6ee7d8, #4fd1c5);
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(79, 209, 197, 0.4), 0 2px 6px rgba(0, 0, 0, 0.6);
+  margin-top: -6px;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 18px rgba(79, 209, 197, 0.6), 0 2px 6px rgba(0, 0, 0, 0.6);
+  transform: scale(1.15);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, rgba(79, 209, 197, 0.15), rgba(56, 189, 248, 0.25));
+  border: 1px solid rgba(79, 209, 197, 0.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #6ee7d8, #4fd1c5);
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(79, 209, 197, 0.4), 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Recharts Dark Theme ── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(79, 209, 197, 0.06) !important;
+}
+
+.recharts-text {
+  fill: #94a3b8 !important;
+  font-size: 10px;
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(12, 20, 35, 0.96) !important;
+  border: 1px solid rgba(79, 209, 197, 0.25) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 16px rgba(79, 209, 197, 0.06) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* ── Animations ── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glow-breathe {
+  0%, 100% { box-shadow: 0 0 12px rgba(79, 209, 197, 0.08); }
+  50% { box-shadow: 0 0 24px rgba(79, 209, 197, 0.18); }
+}
+
+@keyframes float-wave {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-4px); }
+  75% { transform: translateY(4px); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-glow-breathe {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+
+.animate-float-wave {
+  animation: float-wave 3s ease-in-out infinite;
+}
