@@ -45,6 +45,61 @@ Open **`http://localhost:8000`** in any web browser.
 
 ---
 
+## Connecting the Kaggle GNN-OAM model (OceanEmbed-GNN-OAM-FULL.ipynb)
+
+Two ways, both using checkpoint `gnn_C_full_epoch_20.pt` plus the tree (XGBoost) stage `rf_model_*.joblib`:
+
+**A. Export on Kaggle, then drop the files in (small download, no ML libraries locally)**
+1. Paste `kaggle/export_for_dashboard.py` as the last cell of the notebook. Run Sections 1-17, plus 24-26 for 2024, then the new cell.
+2. Download `/kaggle/working/dashboard_export.zip` and unzip it into `backend/data/` (`model_output/` and `validation/` land in place).
+3. Start the backend with `DATA_SOURCE=files`.
+
+**B. Run the model inside the backend (any cached day, computed on demand)**
+1. `pip install torch --index-url https://download.pytorch.org/whl/cpu`. If the tree models are XGBoost, also `pip install xgboost==<Kaggle version>`.
+2. Copy the files listed in `backend/model_artifacts/README.md` into `backend/model_artifacts/`.
+3. Check the setup: `python scripts/run_gnn_inference.py --list`
+4. Optionally precompute a period and write real validation metrics: `python scripts/run_gnn_inference.py --start 2024-12-01 --end 2024-12-31 --validation`
+5. Start the backend with `DATA_SOURCE=model`. The badge reads "MODEL: OceanEmbed GNN-OAM C_full epoch 20 + XGBoost stage".
+
+The backend port gives the same output as the notebook's own `reconstruct_day` (checked to 0.0 °C difference on test data). A day takes about 8 s on CPU the first time and is then served from `backend/data/gnn_output/`. The checkpoint name and model label are set in `backend/config.py` (`GNN_CHECKPOINT_NAME`, `GNN_MODEL_VERSION`).
+
+## Connecting Model Output (recommended path, no backend code)
+
+1. Run the model wherever you normally do (notebook, Colab, script). For each day build one array of shape `(15, 101, 241)` in °C (depths 0…1000 m, lat 5→30 ascending, lon 45→105 ascending, NaN on land). Patch-based models must assemble all ocean cells into the full grid first.
+2. Save it with `save_model_output(pred, "YYYY-MM-DD", out_dir="backend/data/model_output", model_version="...")` from `scripts/save_model_output.py` (copy the function into your notebook).
+3. Check it: `python scripts/check_model_output.py backend/data/model_output/thetao_YYYY-MM-DD.nc`
+4. Start the backend with `DATA_SOURCE=files` (PowerShell: `$env:DATA_SOURCE="files"; python backend/main.py`).
+
+New files appear in the dashboard within 30 s without a restart. Invalid files are rejected and listed in a red "model file rejected" banner in the header. Derived layers, NetCDF exports, the PFZ table and fisherman messages are computed automatically. The Explorer also has an "Upload model output" button that runs the same validation.
+
+`DATA_SOURCE` can be `mock` (default, demo data with an amber badge), `files` (green "MODEL OUTPUT" badge) or `model` (stub in `backend/providers/model_provider.py`, which shows a "not implemented yet" message).
+
+**Delete `backend/data/model_output/thetao_2026-09-25.*` (model_version `TEST-FILE-FROM-MOCK`) once real outputs exist.**
+
+### Files the team fills in
+
+| File | What to do |
+|---|---|
+| `backend/data/validation/validation_metrics.json` | Replace with real per-depth RMSE/bias/corr/n from your evaluation script and set `"status": "final"`. Until then the UI shows "Validation results pending". |
+| `config/species.json` | Fill `t_min_c`/`t_max_c` from CMFRI/FAO literature with a citation in `source`. Species stay hidden while values are `null`. |
+| `backend/data/pfz/pfz_<SECTOR>_<YYYY-MM-DD>.csv` | Copy rows from the INCOIS PFZ page (columns as in `pfz_GOA_2026-09-25.csv`; `lat`/`lon` may be left empty, then they are computed from DMS). |
+| `backend/data/argo/argo_positions.csv` | `date,lat,lon,platform_id` of real ARGO profiles. The confidence index uses profiles within ±10 days of the date. The current file only holds the demo float list from April 2025. |
+| `i18n/<lang>.json` | Add a coastal language by copying `en.json`. `hi.json` is a draft that needs review by a native speaker. |
+
+All thresholds and constants (front threshold 0.02 °C/km, MLD criterion, confidence length scale, sector boxes, etc.) are in `backend/config.py`.
+
+### Tests
+
+```bash
+python -m unittest discover -s scripts/tests -v
+```
+
+### New API endpoints (all under `/api/v1`)
+
+`meta`, `field`, `derived`, `derived.png`, `derived/legend`, `pfz/sectors`, `pfz`, `pfz/enriched`, `species`, `i18n`, `validation`, `model-output/status`, `model-output/upload` (raw body, `?filename=`), `export/netcdf`, `export/derived`, `export/pfz.csv`. `profile` now also returns derived values, and `timeseries` accepts optional `start`/`end`.
+
+---
+
 ## How to Plug in Your Real Trained PyTorch Model
 
 All model interaction is isolated behind a single clean seam in [`backend/model_bridge.py`](file:///oceanembed-viewer/backend/model_bridge.py).

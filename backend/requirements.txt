@@ -9,3 +9,10 @@ scipy>=1.12.0
 requests>=2.31.0
 
 netCDF4>=1.6.5
+
+# In-backend GNN-OAM model (DATA_SOURCE=model) - CPU is enough:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2
+scikit-learn>=1.3
+joblib>=1.3
+# xgboost   <- install the same version as on Kaggle if rf_model_*.joblib contain XGBoost models

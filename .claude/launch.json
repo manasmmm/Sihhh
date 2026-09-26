@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "oceanembed-backend",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["backend/main.py"],
+      "port": 8000
+    }
+  ]
+}

@@ -30,6 +30,7 @@ from provider_facade import (
 from raster import render_temperature_png
 from model_bridge import LATS, LONS, DEPTHS_M, reconstruct_field
 from scripts.precompute import precompute_dataset
+from api_additions import router as additions_router, raise_clear
 
 app = FastAPI(
     title="OceanEmbed Viewer API",
@@ -68,7 +69,7 @@ def api_metadata() -> Dict[str, Any]:
     try:
         return get_metadata()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_clear(e)
 
 
 @app.api_route("/api/v1/field.png", methods=["GET", "HEAD"], tags=["Raster"])
@@ -143,12 +144,12 @@ def api_profile(
         res = get_profile(lat, lon, date)
         if "error" in res and res["error"] == "land_cell":
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=422,
                 content=res,
             )
         return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_clear(e)
 
 
 @app.get("/api/v1/timeseries", tags=["Inspection"])
@@ -156,21 +157,23 @@ def api_timeseries(
     lat: float = Query(..., description="Latitude in decimal degrees"),
     lon: float = Query(..., description="Longitude in decimal degrees"),
     depth: int = Query(0, description="Depth level in meters"),
+    start: Optional[str] = Query(None, description="Optional first date YYYY-MM-DD"),
+    end: Optional[str] = Query(None, description="Optional last date YYYY-MM-DD"),
 ):
     """
     3.5 Temperature across full available date range at fixed depth for nearest ocean cell.
     If snapped cell is land, returns HTTP 422.
     """
     try:
-        res = get_timeseries(lat, lon, depth)
+        res = get_timeseries(lat, lon, depth, start, end)
         if "error" in res and res["error"] == "land_cell":
             return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=422,
                 content=res,
             )
         return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise_clear(e)
 
 
 @app.get("/api/v1/basin_average", tags=["Analysis"])
@@ -233,7 +236,6 @@ def api_infer(
         raise HTTPException(status_code=500, detail=f"Inference error: {e}")
 
 
-from api_additions import router as additions_router
 app.include_router(additions_router)
 
 # =============================================================================

@@ -105,6 +105,25 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
                 position: 'right',
               }}
             />
+            {/* Derived markers: warm-layer depth (D20) and mixed-layer depth */}
+            {profile.derived?.d20 != null && (
+              <ReferenceLine
+                y={profile.derived.d20}
+                stroke="#f472b6"
+                strokeWidth={1.4}
+                strokeDasharray="2 3"
+                label={{ value: `D20 ${Math.round(profile.derived.d20)}m`, fill: '#f472b6', fontSize: 9, position: 'insideTopLeft' }}
+              />
+            )}
+            {profile.derived?.mld != null && (
+              <ReferenceLine
+                y={profile.derived.mld}
+                stroke="#facc15"
+                strokeWidth={1.4}
+                strokeDasharray="2 3"
+                label={{ value: `MLD ${Math.round(profile.derived.mld)}m`, fill: '#facc15', fontSize: 9, position: 'insideBottomLeft' }}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="temperature"
