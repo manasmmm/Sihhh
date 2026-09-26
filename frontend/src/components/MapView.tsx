@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { PinnedPoint, ArgoFloat } from '../types';
+import { PinnedPoint, ArgoFloat, MapLayer } from '../types';
+import { getDerivedPngUrl } from '../api';
 
 interface MapViewProps {
   currentDate: string;
@@ -12,6 +13,7 @@ interface MapViewProps {
   onMapClick: (lat: number, lon: number) => void;
   onRemovePin: (id: string) => void;
   overlayOpacity: number;
+  layer?: MapLayer;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
@@ -24,12 +26,16 @@ export const MapView: React.FC<MapViewProps> = ({
   onMapClick,
   onRemovePin,
   overlayOpacity,
+  layer = 'thetao',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const imageOverlayRef = useRef<L.ImageOverlay | null>(null);
   const pinsLayerRef = useRef<L.LayerGroup | null>(null);
   const argoLayerRef = useRef<L.LayerGroup | null>(null);
+  // Latest click handler (the Leaflet listener is registered once on init)
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
 
   // Exact North Indian Ocean Domain Bounding Box (Section 1)
   const domainBounds: L.LatLngBoundsLiteral = [
@@ -98,7 +104,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
     // Map click event listener
     mapInstance.on('click', (e: L.LeafletMouseEvent) => {
-      onMapClick(e.latlng.lat, e.latlng.lng);
+      onMapClickRef.current(e.latlng.lat, e.latlng.lng);
     });
 
     setMap(mapInstance);
@@ -113,7 +119,10 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!map) return;
 
-    const imgUrl = `/api/v1/field.png?date=${encodeURIComponent(currentDate)}&depth=${currentDepth}&scale=4&adaptive=${adaptiveColor}`;
+    const imgUrl =
+      layer === 'thetao'
+        ? `/api/v1/field.png?date=${encodeURIComponent(currentDate)}&depth=${currentDepth}&scale=4&adaptive=${adaptiveColor}`
+        : getDerivedPngUrl(currentDate, layer);
 
     if (!imageOverlayRef.current) {
       // First creation
@@ -127,7 +136,7 @@ export const MapView: React.FC<MapViewProps> = ({
       imageOverlayRef.current.setUrl(imgUrl);
       imageOverlayRef.current.setOpacity(overlayOpacity);
     }
-  }, [map, currentDate, currentDepth, overlayOpacity, adaptiveColor]);
+  }, [map, currentDate, currentDepth, overlayOpacity, adaptiveColor, layer]);
 
   // Update Pinned Points Markers
   useEffect(() => {

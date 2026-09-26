@@ -1,93 +1,39 @@
+"""
+Check a model output file before dropping it into backend/data/model_output/.
+
+    python scripts/check_model_output.py backend/data/model_output/thetao_2026-09-25.nc
+
+Runs exactly the same validation as the dashboard backend and prints "OK"
+(plus any warnings) or the list of problems. Exit code 0 = valid, 1 = invalid.
+"""
+import argparse
 import os
 import sys
-import argparse
-import numpy as np
-import xarray as xr
 
-# Grid constants
-LATS = [round(5.0 + i * 0.25, 2) for i in range(101)]
-LONS = [round(45.0 + i * 0.25, 2) for i in range(241)]
-DEPTHS_M = [0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000]
+BACKEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend")
+sys.path.insert(0, BACKEND_DIR)
 
-def check_file(file_path: str):
-    problems = []
-    
-    if not os.path.exists(file_path):
-        print(f"Error: File not found: {file_path}")
-        return
-        
-    print(f"Checking {file_path}...")
-    
-    if file_path.endswith('.nc'):
-        try:
-            ds = xr.open_dataset(file_path)
-        except Exception as e:
-            print(f"Error opening NetCDF: {e}")
-            return
-            
-        var_name = "thetao"
-        if var_name not in ds:
-            problems.append(f"Variable '{var_name}' not found in NetCDF.")
-            return
-            
-        arr = ds[var_name].values
-        if arr.ndim == 4 and arr.shape[0] == 1:
-            arr = arr[0]
-            
-        if arr.shape != (15, 101, 241):
-            problems.append(f"Shape is {arr.shape}, expected (15, 101, 241) after removing time dimension.")
-            
-        # Check depths
-        if 'depth' in ds:
-            depths = ds['depth'].values
-            if not np.allclose(depths, DEPTHS_M, atol=0.5):
-                problems.append(f"Depths do not match standard depths. Got {depths}")
-                
-        # Check lat/lon
-        if 'lat' in ds and 'lon' in ds:
-            lat_vals = ds['lat'].values
-            lon_vals = ds['lon'].values
-            if len(lat_vals) > 1 and lat_vals[0] > lat_vals[-1]:
-                print("Note: Latitude is descending. The backend will automatically flip it, but ascending is preferred.")
-            
-            # Simple check for lon range
-            if lon_vals[0] >= 0 and lon_vals[-1] <= 360:
-                pass # Accept 0-360
-            if not (np.isclose(lon_vals[0], LONS[0], atol=0.1) and np.isclose(lon_vals[-1], LONS[-1], atol=0.1)):
-                problems.append(f"Longitude range {lon_vals[0]} to {lon_vals[-1]} does not match expected {LONS[0]} to {LONS[-1]}.")
-                
-    elif file_path.endswith('.npy'):
-        try:
-            arr = np.load(file_path)
-        except Exception as e:
-            print(f"Error loading NumPy array: {e}")
-            return
-            
-        if arr.shape != (15, 101, 241):
-            problems.append(f"Shape is {arr.shape}, expected (15, 101, 241).")
-    else:
-        print("Error: Unsupported file format. Use .nc or .npy")
-        return
-        
-    # Check values
-    min_val = np.nanmin(arr)
-    max_val = np.nanmax(arr)
-    
-    if min_val < -2 or max_val > 40:
-        print(f"Warning: Values range from {min_val:.2f} to {max_val:.2f}, outside expected -2 to 40.")
-        
-    if not np.isnan(arr).any():
-        print("Warning: No NaNs found. Ensure land cells are set to NaN.")
-        
-    if not problems:
+from model_output_validation import validate_file  # noqa: E402
+from model_bridge import get_land_mask  # noqa: E402
+
+
+def check_file(path: str) -> bool:
+    res = validate_file(path, land_mask=get_land_mask())
+    print(f"Checking {path} ...")
+    for w in res.warnings:
+        print(f"  warning: {w}")
+    if res.valid:
         print("OK")
-    else:
-        print("Problems found:")
-        for p in problems:
-            print(f" - {p}")
+        return True
+    print("Problems found:")
+    for e in res.errors:
+        print(f"  - {e}")
+    return False
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check model output file validity.")
-    parser.add_argument("file", help="Path to .nc or .npy file")
+    parser.add_argument("files", nargs="+", help="Path(s) to thetao_YYYY-MM-DD.nc or .npy")
     args = parser.parse_args()
-    check_file(args.file)
+    ok = all([check_file(f) for f in args.files])
+    sys.exit(0 if ok else 1)

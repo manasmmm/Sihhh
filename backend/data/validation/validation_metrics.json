@@ -1,0 +1,113 @@
+{
+  "status": "placeholder",
+  "reference": "INCOIS gridded ARGO",
+  "period": "TODO",
+  "_comment": "TODO(team): overwrite with real per-depth results from your evaluation script and set status to 'final'. Never put made-up numbers here.",
+  "metrics": [
+    {
+      "depth_m": 0,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 5,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 10,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 20,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 30,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 50,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 75,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 100,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 125,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 150,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 200,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 300,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 500,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 700,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    },
+    {
+      "depth_m": 1000,
+      "rmse_c": null,
+      "bias_c": null,
+      "corr": null,
+      "n": null
+    }
+  ]
+}

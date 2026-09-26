@@ -1,37 +1,84 @@
-from datetime import datetime
+import glob
+import os
+import re
+from typing import List
+
 import numpy as np
 import xarray as xr
+
 from .base import TemperatureProvider
-from config import LATS, LONS, DEPTHS_M
+from config import LATS, LONS, DEPTHS_M, PFZ_DIR
 from data_store import get_dates, get_store, is_store_initialized
-from model_bridge import get_land_mask
+from model_bridge import reconstruct_field
+
+MOCK_MODEL_VERSION = "mock-v1"
+_PFZ_DATE_RE = re.compile(r"^pfz_.+_(\d{4}-\d{2}-\d{2})\.csv$")
+
+
+def _pfz_dates() -> List[str]:
+    """Dates that have a PFZ advisory CSV. In demo mode these dates are also
+    offered so the Fisheries tab always has a temperature field to enrich with."""
+    out = set()
+    for f in glob.glob(os.path.join(PFZ_DIR, "pfz_*.csv")):
+        m = _PFZ_DATE_RE.match(os.path.basename(f))
+        if m:
+            out.add(m.group(1))
+    return sorted(out)
+
 
 class MockProvider(TemperatureProvider):
-    def available_dates(self):
-        if is_store_initialized():
-            return get_dates()
-        return ["2026-09-25"] # fallback
+    """Demo data. Reuses the existing precomputed Zarr store (the values the
+    Explorer always showed). Dates outside the store are generated with the
+    same smooth, date-seeded generator used to build the store
+    (model_bridge.reconstruct_field), so every mock date looks consistent."""
+
+    def available_dates(self) -> List[str]:
+        dates = set(get_dates()) if is_store_initialized() else set()
+        dates.update(_pfz_dates())
+        return sorted(dates)
+
+    def stamp(self, day: str) -> str:
+        if is_store_initialized() and day in get_dates():
+            return "zarr:" + str(get_store("r").attrs.get("created_at", ""))
+        return "synthetic"
+
+    def date_info(self, day: str):
+        return {"generated_at": self._generated_at(day), "model_version": MOCK_MODEL_VERSION}
+
+    def _generated_at(self, day: str) -> str:
+        if is_store_initialized() and day in get_dates():
+            created = get_store("r").attrs.get("created_at")
+            if created:
+                return created if created.endswith("Z") else created + "Z"
+        return f"{day}T00:00:00Z"
 
     def get_temperature(self, day: str) -> xr.Dataset:
-        land_mask = get_land_mask()
-        
-        # Try to read from existing zarr store
         if is_store_initialized():
             dates = get_dates()
             if day in dates:
-                store = get_store("r")
-                time_idx = dates.index(day)
-                arr = np.array(store["thetao"][time_idx, :, :, :], dtype=np.float32)
+                arr = np.array(get_store("r")["thetao"][dates.index(day), :, :, :], dtype=np.float32)
                 return self._to_dataset(arr, day)
-        
-        # Fallback to generating synthetic data if date not in store or store missing
-        arr = self._generate_synthetic(day, land_mask)
-        return self._to_dataset(arr, day)
-        
+        return self._to_dataset(reconstruct_field(day), day)
+
+    def get_point_series(self, dates, depth_idx, lat_idx, lon_idx):
+        # Fast path: read one column of the Zarr store instead of whole cubes.
+        out = np.full(len(dates), np.nan, dtype=np.float32)
+        store_dates = get_dates() if is_store_initialized() else []
+        pos = {d: i for i, d in enumerate(store_dates)}
+        in_store = [(i, pos[d]) for i, d in enumerate(dates) if d in pos]
+        if in_store:
+            column = np.asarray(get_store("r")["thetao"][:, depth_idx, lat_idx, lon_idx], dtype=np.float32)
+            for i, t in in_store:
+                out[i] = column[t]
+        for i, d in enumerate(dates):
+            if d not in pos:
+                out[i] = reconstruct_field(d)[depth_idx, lat_idx, lon_idx]
+        return out
+
     def _to_dataset(self, arr: np.ndarray, day: str) -> xr.Dataset:
         ds = xr.Dataset(
             {
-                "thetao": (["depth", "lat", "lon"], arr, {
+                "thetao": (["depth", "lat", "lon"], arr.astype(np.float32), {
                     "units": "degree_Celsius",
                     "standard_name": "sea_water_potential_temperature",
                 })
@@ -43,30 +90,6 @@ class MockProvider(TemperatureProvider):
             }
         )
         ds.attrs["source"] = "mock"
-        ds.attrs["model_version"] = "mock-v1"
-        ds.attrs["generated_at"] = datetime.utcnow().isoformat() + "Z"
+        ds.attrs["model_version"] = MOCK_MODEL_VERSION
+        ds.attrs["generated_at"] = self._generated_at(day)
         return ds
-
-    def _generate_synthetic(self, day: str, land_mask: np.ndarray) -> np.ndarray:
-        # Seed random generator from date
-        seed = int(day.replace("-", ""))
-        rng = np.random.default_rng(seed)
-        
-        lat_grid, lon_grid = np.meshgrid(LATS, LONS, indexing='ij')
-        
-        # SST: 29 at south (lat=5), decreasing northward, plus random
-        sst_base = 29.0 - (lat_grid - 5.0) * 0.1
-        sst_noise = rng.uniform(-1, 1, size=lat_grid.shape)
-        sst = sst_base + sst_noise
-        
-        # Profile parameters
-        t_deep = 7.0
-        d_center = rng.uniform(70, 150, size=lat_grid.shape)
-        w_width = 50.0
-        
-        arr = np.zeros((len(DEPTHS_M), len(LATS), len(LONS)), dtype=np.float32)
-        for k, z in enumerate(DEPTHS_M):
-            arr[k, :, :] = t_deep + (sst - t_deep) * 0.5 * (1.0 - np.tanh((z - d_center) / w_width))
-            
-        arr[:, land_mask] = np.nan
-        return arr

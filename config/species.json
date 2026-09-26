@@ -1,0 +1,8 @@
+{
+  "_comment": "TODO(team): fill t_min_c / t_max_c (degC) from literature (CMFRI / FAO) and cite it in 'source'. Species with null values are hidden in the UI. Do not guess values.",
+  "species": [
+    { "name": "Yellowfin tuna", "t_min_c": null, "t_max_c": null, "source": null },
+    { "name": "Indian oil sardine", "t_min_c": null, "t_max_c": null, "source": null },
+    { "name": "Indian mackerel", "t_min_c": null, "t_max_c": null, "source": null }
+  ]
+}

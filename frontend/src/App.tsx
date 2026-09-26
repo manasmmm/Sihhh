@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Waves,
   Eye,
@@ -6,6 +6,11 @@ import {
   Info,
   Trash2,
   Anchor,
+  ShieldCheck,
+  Download,
+  Upload,
+  AlertTriangle,
+  Layers,
 } from 'lucide-react';
 import { MapView } from './components/MapView';
 import { DepthSlider } from './components/DepthSlider';
@@ -13,20 +18,43 @@ import { TimeSlider } from './components/TimeSlider';
 import { PointCard } from './components/PointCard';
 import { Colorbar } from './components/Colorbar';
 import { BasinAverageModal } from './components/BasinAverageModal';
-import { DataSourceBadge } from './components/DataSourceBadge';
+import { TopBar, TabId } from './components/TopBar';
+import { ValidationPanel } from './components/ValidationPanel';
+import { DerivedLegend } from './components/DerivedLegend';
+import { FisheriesTab } from './components/FisheriesTab';
 import {
   Metadata,
   PinnedPoint,
   ArgoFloat,
   ProfileResponse,
   TimeseriesResponse,
+  MapLayer,
 } from './types';
 import {
-  fetchMetadata,
+  fetchMeta,
   fetchProfile,
   fetchTimeseries,
   fetchArgoFloats,
+  downloadFile,
+  netcdfUrl,
+  derivedNetcdfUrl,
+  uploadModelOutput,
 } from './api';
+import { useI18n } from './i18n';
+
+// Explorer colour-layer options (derived layers are optional in this tab)
+const EXPLORER_LAYERS: { value: MapLayer; label: string }[] = [
+  { value: 'thetao', label: 'Temperature (thetao) at selected depth' },
+  { value: 'd20', label: 'Warm-layer depth (D20)' },
+  { value: 'mld', label: 'Mixed-layer depth (MLD)' },
+  { value: 'front_0m', label: 'Front strength at 0 m' },
+  { value: 'front_50m', label: 'Front strength at 50 m' },
+  { value: 'front_100m', label: 'Front strength at 100 m' },
+  { value: 'subsurface_front_flag', label: 'Subsurface-only fronts' },
+  { value: 'confidence', label: 'Confidence (data density)' },
+];
+
+const META_REFRESH_MS = 30000;
 
 // Distinctive high-contrast colors for pinned points
 const PIN_COLORS = [
@@ -50,13 +78,31 @@ export const App: React.FC = () => {
   const [adaptiveColor, setAdaptiveColor] = useState<boolean>(true);
   const [landAlert, setLandAlert] = useState<{ message: string; lat: number; lon: number } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>('explorer');
+  const [lang, setLang] = useState<string>('en');
+  const [fisheriesDate, setFisheriesDate] = useState<string | null>(null);
+  const [mapLayer, setMapLayer] = useState<MapLayer>('thetao');
+  const [showValidation, setShowValidation] = useState<boolean>(false);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const { t, isDraft } = useI18n(lang);
+
+  const showToast = useCallback((kind: 'ok' | 'error', text: string) => {
+    setToast({ kind, text });
+    setTimeout(() => setToast(null), 6000);
+  }, []);
 
   // Load metadata and Argo floats on mount
   useEffect(() => {
-    Promise.all([fetchMetadata(), fetchArgoFloats()])
+    Promise.all([fetchMeta(), fetchArgoFloats().catch(() => ({ count: 0, floats: [] as ArgoFloat[] }))])
       .then(([meta, argoRes]) => {
         setMetadata(meta);
-        if (meta.dates.all_dates && meta.dates.all_dates.length > 0) {
+        if (meta.ready_dates && meta.ready_dates.length > 0) {
+          // In-backend model: open on a day that is already reconstructed (others take a few seconds)
+          setCurrentDate(meta.ready_dates[meta.ready_dates.length - 1]);
+        } else if (meta.dates.all_dates && meta.dates.all_dates.length > 0) {
           setCurrentDate(meta.dates.all_dates[0]);
         }
         if (meta.depths_m && meta.depths_m.length > 0) {
@@ -67,9 +113,59 @@ export const App: React.FC = () => {
       })
       .catch((err) => {
         console.error('Failed to initialize app:', err);
+        setInitError(err instanceof Error ? err.message : String(err));
         setIsLoading(false);
       });
   }, []);
+
+  // Rescan: model output files dropped into the folder appear without a reload
+  const refreshMeta = useCallback(() => {
+    fetchMeta()
+      .then((meta) => setMetadata(meta))
+      .catch((err) => console.error('Metadata refresh failed:', err));
+  }, []);
+  useEffect(() => {
+    if (!metadata) return;
+    const id = window.setInterval(refreshMeta, META_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [metadata !== null, refreshMeta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDownload = useCallback(
+    async (kind: 'thetao' | 'derived') => {
+      setBusy(kind);
+      try {
+        if (kind === 'thetao') await downloadFile(netcdfUrl(currentDate), `thetao_${currentDate}.nc`);
+        else await downloadFile(derivedNetcdfUrl(currentDate), `derived_${currentDate}.nc`);
+      } catch (e: any) {
+        showToast('error', `Download failed: ${e.message}`);
+      } finally {
+        setBusy(null);
+      }
+    },
+    [currentDate, showToast]
+  );
+
+  const handleUpload = useCallback(
+    async (file: File) => {
+      setBusy('upload');
+      try {
+        const res = await uploadModelOutput(file);
+        if (res.saved) {
+          const note = metadata?.data_source === 'model_output_files' ? '' : ' (set DATA_SOURCE=files to display it)';
+          showToast('ok', `${file.name} validated and saved${note}.${res.warnings.length ? ' Warnings: ' + res.warnings.join('; ') : ''}`);
+          refreshMeta();
+        } else {
+          showToast('error', `${file.name} rejected: ${res.errors.join('; ')}`);
+        }
+      } catch (e: any) {
+        showToast('error', `Upload failed: ${e.message}`);
+      } finally {
+        setBusy(null);
+        if (uploadInputRef.current) uploadInputRef.current.value = '';
+      }
+    },
+    [metadata?.data_source, refreshMeta, showToast]
+  );
 
   // Update profile and timeseries when depth or date changes for all open pins
   useEffect(() => {
@@ -161,6 +257,25 @@ export const App: React.FC = () => {
     setPinnedPoints([]);
   }, []);
 
+  if (!isLoading && initError) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-[#060a10] text-slate-200 gap-4 px-6">
+        <AlertTriangle className="w-12 h-12 text-amber-400" />
+        <div className="text-lg font-semibold text-white">OceanEmbed Viewer could not load data</div>
+        <div className="max-w-xl text-center text-sm font-mono text-amber-200 bg-amber-950/40 border border-amber-500/30 rounded-xl px-5 py-3">
+          {initError}
+        </div>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="px-4 py-1.5 rounded-lg text-xs font-medium bg-[#4fd1c5]/15 text-[#4fd1c5] border border-[#4fd1c5]/35"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (isLoading || !metadata) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-[#060a10] text-slate-200">
@@ -182,9 +297,31 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#060a10] text-slate-100">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-[#060a10] text-slate-100">
+      <TopBar
+        metadata={metadata}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        productDate={activeTab === 'explorer' ? currentDate : fisheriesDate}
+        tabLabels={{ explorer: 'Explorer', fisheries: 'Fisheries Advisory' }}
+      />
+
+      {activeTab === 'fisheries' ? (
+        <div className="relative flex-1 min-h-0">
+          <FisheriesTab
+            depths={metadata.depths_m}
+            lang={lang}
+            onLangChange={setLang}
+            t={t}
+            isDraft={isDraft}
+            onDateChange={setFisheriesDate}
+          />
+        </div>
+      ) : (
+    <div className="relative flex-1 min-h-0 overflow-hidden">
       {/* 1. Base Map Layer */}
       <MapView
+        layer={mapLayer}
         currentDate={currentDate}
         currentDepth={currentDepth}
         pinnedPoints={pinnedPoints}
@@ -196,9 +333,10 @@ export const App: React.FC = () => {
         overlayOpacity={overlayOpacity}
       />
 
-      {/* 2. Top-Left Layer-Info Panel */}
+      {/* 2. Top-Left Layer-Info Panel (+ optional validation panel below it) */}
+      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-3 pointer-events-none">
       <div
-        className="absolute top-4 left-4 z-[1000] copernicus-panel p-4 text-xs flex flex-col gap-2.5 pointer-events-auto"
+        className="copernicus-panel p-4 text-xs flex flex-col gap-2.5 pointer-events-auto"
         style={{
           width: '320px',
           backgroundColor: 'rgba(12, 20, 35, 0.92)',
@@ -220,14 +358,8 @@ export const App: React.FC = () => {
                   SIH26066
                 </span>
               </div>
-              <div className="text-[10px] text-slate-500 font-mono mt-0.5 flex gap-2 items-center">
+              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                 Vision Transformer (ViT)
-                {metadata && (
-                  <DataSourceBadge 
-                    dataSource={metadata.data_source || 'mock'} 
-                    modelVersion={metadata.model_version || 'unknown'} 
-                  />
-                )}
               </div>
             </div>
           </div>
@@ -320,6 +452,80 @@ export const App: React.FC = () => {
             {Math.round(overlayOpacity * 100)}%
           </span>
         </div>
+
+        {/* Colour layer: thetao (default) or a derived layer */}
+        <div className="flex items-center gap-2.5 text-[10px] text-slate-500">
+          <Layers size={10} className="text-slate-600 flex-shrink-0" />
+          <span className="flex-shrink-0">Layer</span>
+          <select
+            value={mapLayer}
+            onChange={(e) => setMapLayer(e.target.value as MapLayer)}
+            className="w-full bg-[#0b1322] border border-white/10 rounded-md px-1.5 py-1 text-[10.5px] text-slate-100 focus:outline-none focus:border-[#4fd1c5]/50"
+          >
+            {EXPLORER_LAYERS.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Downloads, upload and validation */}
+        <div className="pt-2.5 flex flex-wrap items-center gap-1.5 relative">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+          <button
+            type="button"
+            onClick={() => handleDownload('thetao')}
+            disabled={busy !== null}
+            title={`Download CF-1.8 NetCDF of thetao for ${currentDate}`}
+            className="px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white border border-white/5 disabled:opacity-50"
+          >
+            <Download size={11} />
+            {busy === 'thetao' ? 'Preparing…' : 'Download NetCDF (thetao)'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDownload('derived')}
+            disabled={busy !== null}
+            title={`Download NetCDF of derived layers for ${currentDate}`}
+            className="px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white border border-white/5 disabled:opacity-50"
+          >
+            <Download size={11} />
+            {busy === 'derived' ? 'Preparing…' : 'Download NetCDF (derived layers)'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowValidation(!showValidation)}
+            className={`px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 transition-all duration-200 ${
+              showValidation
+                ? 'bg-gradient-to-r from-[#4fd1c5]/20 to-[#38bdf8]/15 text-[#4fd1c5] border border-[#4fd1c5]/35'
+                : 'bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-transparent'
+            }`}
+          >
+            <ShieldCheck size={11} />
+            Validation
+          </button>
+          <button
+            type="button"
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={busy !== null}
+            title="Upload one thetao_YYYY-MM-DD.nc or .npy model output file (validated before saving)"
+            className="px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-transparent disabled:opacity-50"
+          >
+            <Upload size={11} />
+            {busy === 'upload' ? 'Uploading…' : 'Upload model output'}
+          </button>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept=".nc,.npy"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
+          />
+        </div>
+      </div>
+
+      {showValidation && <ValidationPanel onClose={() => setShowValidation(false)} />}
       </div>
 
       {/* 3. Floating Pinned Inspection Cards */}
@@ -358,6 +564,12 @@ export const App: React.FC = () => {
 
       {/* 5. Colorbar / Legend */}
       <div className="absolute bottom-28 right-4 z-[1000]">
+        {mapLayer !== 'thetao' ? (
+          <DerivedLegend
+            variable={mapLayer}
+            title={EXPLORER_LAYERS.find((l) => l.value === mapLayer)?.label ?? mapLayer}
+          />
+        ) : (
         <Colorbar
           vmin={
             adaptiveColor
@@ -395,6 +607,7 @@ export const App: React.FC = () => {
           onToggleAdaptive={() => setAdaptiveColor(!adaptiveColor)}
           currentDepth={currentDepth}
         />
+        )}
       </div>
 
       {/* 6. Horizontal Time Slider */}
@@ -418,6 +631,23 @@ export const App: React.FC = () => {
           <span>
             {landAlert.message} — snapped to {landAlert.lat.toFixed(2)}°N, {landAlert.lon.toFixed(2)}°E
           </span>
+        </div>
+      )}
+    </div>
+      )}
+
+      {/* Download / upload result toast */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[2500] max-w-2xl px-5 py-2.5 rounded-xl shadow-xl backdrop-blur-xl text-xs font-mono flex items-center gap-2.5 animate-fade-in border ${
+            toast.kind === 'ok'
+              ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/30'
+              : 'bg-rose-950/90 text-rose-200 border-rose-500/30'
+          }`}
+          onClick={() => setToast(null)}
+        >
+          {toast.kind === 'ok' ? <Info size={15} /> : <AlertTriangle size={15} />}
+          <span>{toast.text}</span>
         </div>
       )}
     </div>
