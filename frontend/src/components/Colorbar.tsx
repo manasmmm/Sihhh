@@ -20,22 +20,19 @@ export const Colorbar: React.FC<ColorbarProps> = ({
   onToggleAdaptive,
   currentDepth = 0,
 }) => {
-  // Turbo colormap gradient CSS
-  const turboGradient =
-    'linear-gradient(to right, #30123b, #4145ab, #4675ed, #39a2fc, #1bcfd4, #24eca6, #61fc6c, #a4fc3b, #d1e834, #f3c63a, #fe9b2d, #f36315, #d93806, #b11901, #7a0402)';
+  // Same 'magma' palette the server uses to draw the map (backend/raster.py),
+  // so the legend colours match the map exactly.
+  const magmaGradient =
+    'linear-gradient(to right, #000004, #140e36, #3b0f70, #641a80, #8c2981, #b73779, #de4968, #f7705c, #fe9f6d, #fecf92, #fcfdbf)';
 
-  // Calculate ticks dynamically
+  // "degC" / "degree_Celsius" -> "°C"
+  const unitLabel = /^deg(ree)?_?C(elsius)?$/i.test(unit) ? '°C' : unit;
+
+  // Five evenly spaced ticks; one decimal when the range is narrow (e.g. 26.4 to 30.1)
   const ticks = React.useMemo(() => {
-    const low = vmin;
-    const high = vmax;
-    const step = (high - low) / 4;
-    return [
-      Math.round(low),
-      Math.round(low + step),
-      Math.round(low + step * 2),
-      Math.round(low + step * 3),
-      Math.round(high),
-    ];
+    const step = (vmax - vmin) / 4;
+    const decimals = vmax - vmin < 8 ? 1 : 0;
+    return [0, 1, 2, 3, 4].map((i) => (vmin + step * i).toFixed(decimals));
   }, [vmin, vmax]);
 
   return (
@@ -59,7 +56,7 @@ export const Colorbar: React.FC<ColorbarProps> = ({
           <button
             type="button"
             onClick={onToggleAdaptive}
-            title={adaptiveColor ? 'Switch to fixed 0-32°C scale' : 'Auto-stretch contrast for this layer'}
+            title={adaptiveColor ? 'Switch to fixed 0-32°C scale' : 'Auto-stretch contrast to this day and depth'}
             className={`px-2 py-1 rounded-md text-[9px] font-mono flex items-center gap-1 transition-all duration-200 ${
               adaptiveColor
                 ? 'bg-gradient-to-r from-[#4fd1c5]/20 to-[#38bdf8]/15 text-[#4fd1c5] border border-[#4fd1c5]/30 font-bold'
@@ -76,12 +73,12 @@ export const Colorbar: React.FC<ColorbarProps> = ({
       <div className="relative">
         <div
           className="absolute inset-0 rounded-md blur-sm opacity-30"
-          style={{ background: turboGradient }}
+          style={{ background: magmaGradient }}
         />
         <div
           className="relative"
           style={{
-            background: turboGradient,
+            background: magmaGradient,
             height: '14px',
             width: '100%',
             borderRadius: '5px',
@@ -95,7 +92,7 @@ export const Colorbar: React.FC<ColorbarProps> = ({
       <div className="flex justify-between text-[10px] text-slate-400 font-mono px-0.5">
         {ticks.map((val, idx) => (
           <span key={idx} className={idx === 0 || idx === ticks.length - 1 ? 'text-slate-300 font-medium' : ''}>
-            {val}{unit}
+            {val}{unitLabel}
           </span>
         ))}
       </div>

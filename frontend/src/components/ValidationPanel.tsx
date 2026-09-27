@@ -40,7 +40,7 @@ export const ValidationPanel: React.FC<ValidationPanelProps> = ({ onClose }) => 
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 font-semibold text-white text-[12px]">
           <ShieldCheck size={14} className="text-[#4fd1c5]" />
-          Validation vs ARGO
+          Model validation
         </span>
         <button
           type="button"

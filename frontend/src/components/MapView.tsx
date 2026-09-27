@@ -16,6 +16,8 @@ interface MapViewProps {
   overlayOpacity: number;
   layer?: MapLayer;
   basemap?: BasemapId;
+  /** Colour range the server used for the current temperature image (for the legend) */
+  onRangeChange?: (vmin: number, vmax: number) => void;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
@@ -30,6 +32,7 @@ export const MapView: React.FC<MapViewProps> = ({
   overlayOpacity,
   layer = 'thetao',
   basemap = DEFAULT_BASEMAP,
+  onRangeChange,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<L.Map | null>(null);
@@ -39,6 +42,9 @@ export const MapView: React.FC<MapViewProps> = ({
   // Latest click handler (the Leaflet listener is registered once on init)
   const onMapClickRef = useRef(onMapClick);
   onMapClickRef.current = onMapClick;
+  const onRangeChangeRef = useRef(onRangeChange);
+  onRangeChangeRef.current = onRangeChange;
+  const objectUrlRef = useRef<string | null>(null);
 
   // Exact North Indian Ocean Domain Bounding Box (Section 1)
   const domainBounds: L.LatLngBoundsLiteral = [
@@ -102,28 +108,68 @@ export const MapView: React.FC<MapViewProps> = ({
 
   useBasemap(map, basemap);
 
-  // Update ImageOverlay whenever map, date, depth, opacity, or adaptive contrast changes
-  useEffect(() => {
+  const showImage = (url: string) => {
     if (!map) return;
-
-    const imgUrl =
-      layer === 'thetao'
-        ? `/api/v1/field.png?date=${encodeURIComponent(currentDate)}&depth=${currentDepth}&scale=4&adaptive=${adaptiveColor}`
-        : getDerivedPngUrl(currentDate, layer);
-
     if (!imageOverlayRef.current) {
-      // First creation
-      const overlay = L.imageOverlay(imgUrl, domainBounds, {
+      imageOverlayRef.current = L.imageOverlay(url, domainBounds, {
         opacity: overlayOpacity,
         interactive: false,
       }).addTo(map);
-      imageOverlayRef.current = overlay;
     } else {
-      // Update image URL and opacity seamlessly
-      imageOverlayRef.current.setUrl(imgUrl);
-      imageOverlayRef.current.setOpacity(overlayOpacity);
+      imageOverlayRef.current.setUrl(url);
     }
-  }, [map, currentDate, currentDepth, overlayOpacity, adaptiveColor, layer]);
+  };
+
+  // Update the overlay image whenever the map, date, depth, contrast mode or layer changes.
+  // Temperature images are fetched (not just linked) so the colour range the server
+  // actually used (X-Vmin / X-Vmax headers) can be passed to the legend.
+  useEffect(() => {
+    if (!map) return;
+
+    if (layer !== 'thetao') {
+      showImage(getDerivedPngUrl(currentDate, layer));
+      return;
+    }
+
+    const url = `/api/v1/field.png?date=${encodeURIComponent(currentDate)}&depth=${currentDepth}&scale=4&adaptive=${adaptiveColor}`;
+    let cancelled = false; // a newer date/depth was requested before this one arrived
+    fetch(url)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const vmin = parseFloat(res.headers.get('X-Vmin') ?? '');
+        const vmax = parseFloat(res.headers.get('X-Vmax') ?? '');
+        const blob = await res.blob();
+        if (cancelled) return;
+        const objectUrl = URL.createObjectURL(blob);
+        const previous = objectUrlRef.current;
+        objectUrlRef.current = objectUrl;
+        showImage(objectUrl);
+        if (previous) setTimeout(() => URL.revokeObjectURL(previous), 2000);
+        if (isFinite(vmin) && isFinite(vmax)) onRangeChangeRef.current?.(vmin, vmax);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error('Failed to load temperature map:', err);
+          showImage(url); // plain URL fallback; the legend keeps its last known range
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [map, currentDate, currentDepth, adaptiveColor, layer]);
+
+  // Opacity changes only restyle the current image
+  useEffect(() => {
+    imageOverlayRef.current?.setOpacity(overlayOpacity);
+  }, [overlayOpacity]);
+
+  // Free the last image when the map goes away
+  useEffect(
+    () => () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    },
+    []
+  );
 
   // Update Pinned Points Markers
   useEffect(() => {

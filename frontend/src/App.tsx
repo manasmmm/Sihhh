@@ -85,6 +85,8 @@ export const App: React.FC = () => {
   const [lang, setLang] = useState<string>('en');
   const [fisheriesDate, setFisheriesDate] = useState<string | null>(null);
   const [mapLayer, setMapLayer] = useState<MapLayer>('thetao');
+  const [fieldRange, setFieldRange] = useState<[number, number] | null>(null);
+  const handleRangeChange = useCallback((vmin: number, vmax: number) => setFieldRange([vmin, vmax]), []);
   const [basemap, setBasemapState] = useState<BasemapId>(loadBasemapChoice);
   const setBasemap = useCallback((id: BasemapId) => {
     setBasemapState(id);
@@ -331,6 +333,7 @@ export const App: React.FC = () => {
       {/* 1. Base Map Layer */}
       <MapView
         layer={mapLayer}
+        onRangeChange={handleRangeChange}
         basemap={basemap}
         currentDate={currentDate}
         currentDepth={currentDepth}
@@ -598,36 +601,9 @@ export const App: React.FC = () => {
           />
         ) : (
         <Colorbar
-          vmin={
-            adaptiveColor
-              ? currentDepth === 0
-                ? 24
-                : currentDepth <= 50
-                ? 20
-                : currentDepth <= 100
-                ? 15
-                : currentDepth <= 200
-                ? 12
-                : currentDepth <= 500
-                ? 8
-                : 5
-              : metadata.variable.colorbar_range[0]
-          }
-          vmax={
-            adaptiveColor
-              ? currentDepth === 0
-                ? 32
-                : currentDepth <= 50
-                ? 30
-                : currentDepth <= 100
-                ? 27
-                : currentDepth <= 200
-                ? 20
-                : currentDepth <= 500
-                ? 14
-                : 9
-              : metadata.variable.colorbar_range[1]
-          }
+          // Exact range the server used for the image on screen (auto contrast or fixed 0-32)
+          vmin={fieldRange ? fieldRange[0] : metadata.variable.colorbar_range[0]}
+          vmax={fieldRange ? fieldRange[1] : metadata.variable.colorbar_range[1]}
           unit={metadata.variable.units}
           variableName="thetao"
           adaptiveColor={adaptiveColor}
