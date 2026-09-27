@@ -222,7 +222,7 @@ def get_metadata_provider() -> Dict[str, Any]:
             **{k: {"units": u, "long_name": ln} for k, (u, ln) in _derived_meta().items()},
         },
         "model_info": {
-            "architecture": "OceanEmbed-ViT",
+            "architecture": "OceanEmbed-GNN-OAM",
             "resolution": "0.25 deg x 15 depth levels",
             "region": "North Indian Ocean (5N-30N, 45E-105E)",
         },

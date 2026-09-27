@@ -1,5 +1,5 @@
 """
-Model Bridge for OceanEmbed-ViT
+Model Bridge for OceanEmbed-GNN-OAM
 ==========================================
 Integration boundary for the subsurface ocean temperature reconstruction model.
 The frontend and data pipeline call `reconstruct_field(date: str)` to get full 3D temperature fields.
@@ -108,11 +108,11 @@ def reconstruct_field(date: str) -> np.ndarray:
         Order of depth axis matches DEPTHS_M (index 0 = 0m ... index 14 = 1000m).
     """
     # =========================================================================
-    # TODO: replace with real OceanEmbed-ViT checkpoint
+    # TODO: replace with real OceanEmbed-GNN-OAM checkpoint
     #
     # When wiring your trained model:
     # 1. Load your satellite input features for `date` (e.g., SLA, SST, SSS, Wind Stress).
-    # 2. Run forward pass through `OceanEmbed-ViT` PyTorch model:
+    # 2. Run forward pass through `OceanEmbed-GNN-OAM` PyTorch model:
     #       with torch.no_grad():
     #           pred_tensor = model(input_tensor) # shape: (1, 15, 101, 241)
     # 3. Apply land mask (pred_tensor[..., land_mask] = np.nan).

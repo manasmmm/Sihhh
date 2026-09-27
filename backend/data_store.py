@@ -83,7 +83,7 @@ def get_metadata() -> Dict[str, Any]:
             "colorbar_range": [0, 32],
         },
         "model_info": {
-            "architecture": "OceanEmbed-ViT",
+            "architecture": "OceanEmbed-GNN-OAM",
             "resolution": "0.25 deg x 15 depth levels",
             "region": "North Indian Ocean (5°N-30°N, 45°E-105°E)",
         },
