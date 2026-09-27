@@ -1,0 +1,14 @@
+# Render.com blueprint: free web service serving the API + built React frontend.
+services:
+  - type: web
+    name: oceanembed
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements-deploy.txt
+    startCommand: python backend/main.py
+    healthCheckPath: /api/v1/meta
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATA_SOURCE
+        value: files

@@ -248,4 +248,5 @@ if os.path.exists(FRONTEND_DIST):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Hosting platforms (Render, Railway, ...) pass the port in $PORT
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))

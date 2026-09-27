@@ -8,3 +8,7 @@ __pycache__/
 backend/data/derived/
 backend/data/output/*
 !backend/data/output/thetao_2026-09-25.nc
+
+# Kaggle export bundles (already unpacked into backend/data)
+backend/data/dashboard_export/
+backend/data/dashboard_export.zip
