@@ -103,5 +103,5 @@ def render_temperature_png(
         img = img.resize((target_w, target_h), resample=Image.Resampling.BILINEAR)
 
     buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True)
+    img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files
     return buf.getvalue(), eff_vmin, eff_vmax

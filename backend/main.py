@@ -7,6 +7,9 @@ and interactive exploration of the North Indian Ocean domain.
 
 import os
 import sys
+import threading
+import time
+from collections import OrderedDict
 from typing import Optional, List, Dict, Any
 import numpy as np
 from fastapi import FastAPI, Query, HTTPException, status
@@ -55,6 +58,49 @@ def startup_check():
         print("Reconstruction Zarr store not detected. Automatically precomputing 120-day baseline...")
         precompute_dataset(start_date="2025-01-01", end_date="2025-04-30")
         print("Baseline dataset ready.")
+    # Draw the default map view for every date in the background, so the time slider
+    # is instant even on a small hosting CPU.
+    threading.Thread(target=_prewarm_field_pngs, daemon=True).start()
+
+
+# In-memory cache of rendered map images (about 0.2 MB each)
+_PNG_CACHE: "OrderedDict[tuple, tuple]" = OrderedDict()
+_PNG_CACHE_MAX = 400
+_PNG_LOCK = threading.Lock()
+
+
+def _field_png(date: str, depth: int, scale: int, adaptive: bool,
+               vmin: Optional[float], vmax: Optional[float]):
+    """(png_bytes, vmin, vmax), cached per data version, date and view settings."""
+    from providers import get_provider
+    key = (get_provider().stamp(date), date, depth, scale, adaptive, vmin, vmax)
+    with _PNG_LOCK:
+        hit = _PNG_CACHE.get(key)
+        if hit is not None:
+            _PNG_CACHE.move_to_end(key)
+            return hit
+    field_2d = get_field_slice(date, depth)
+    out = render_temperature_png(field_2d, vmin=vmin, vmax=vmax, adaptive=adaptive, scale=scale)
+    with _PNG_LOCK:
+        _PNG_CACHE[key] = out
+        while len(_PNG_CACHE) > _PNG_CACHE_MAX:
+            _PNG_CACHE.popitem(last=False)
+    return out
+
+
+def _prewarm_field_pngs():
+    """Default Explorer view: surface, auto contrast, scale 4 (see MapView.tsx)."""
+    try:
+        from providers import get_provider
+        provider = get_provider()
+        # model mode: only days already reconstructed (never start GNN runs here)
+        dates = provider.cached_dates() if hasattr(provider, "cached_dates") else provider.available_dates()
+        t0 = time.time()
+        for d in dates[:_PNG_CACHE_MAX // 2]:
+            _field_png(d, 0, 4, True, None, None)
+        print(f"Pre-rendered {len(dates[:_PNG_CACHE_MAX // 2])} surface maps in {time.time() - t0:.1f}s")
+    except Exception as e:  # never block or crash start-up
+        print(f"Map pre-rendering skipped: {e}")
 
 
 # =============================================================================
@@ -86,10 +132,7 @@ def api_field_png(
     transparent land cells (alpha=0), edge-to-edge for Leaflet ImageOverlay.
     """
     try:
-        field_2d = get_field_slice(date, depth)
-        png_bytes, eff_vmin, eff_vmax = render_temperature_png(
-            field_2d, vmin=vmin, vmax=vmax, adaptive=adaptive, scale=scale
-        )
+        png_bytes, eff_vmin, eff_vmax = _field_png(date, depth, scale, adaptive, vmin, vmax)
         return Response(
             content=png_bytes,
             media_type="image/png",
