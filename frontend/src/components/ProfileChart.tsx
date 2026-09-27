@@ -11,6 +11,11 @@ import {
 } from 'recharts';
 import { ProfileResponse } from '../types';
 
+// Depth is plotted on a square-root scale: the upper ocean (mixed layer, thermocline),
+// where most of the structure is, gets more room while the axis still reaches 1000 m.
+const toAxis = (depth: number) => Math.sqrt(Math.max(depth, 0));
+const DEPTH_TICKS = [0, 25, 50, 100, 200, 300, 500, 1000];
+
 interface ProfileChartProps {
   profile: ProfileResponse;
   currentDepth: number;
@@ -23,6 +28,7 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
   const chartData = useMemo(() => {
     return profile.depths_m.map((d, i) => ({
       depth: d,
+      depthAxis: toAxis(d),
       temperature: profile.temperature_c[i],
     }));
   }, [profile]);
@@ -48,12 +54,12 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
         </span>
       </div>
 
-      <div style={{ width: '100%', height: 160 }}>
+      <div style={{ width: '100%', height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             layout="vertical"
             data={chartData}
-            margin={{ top: 8, right: 12, left: -16, bottom: 4 }}
+            margin={{ top: 8, right: 14, left: -12, bottom: 4 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
             {/* Temperature on X-Axis */}
@@ -65,16 +71,17 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
               tick={{ fill: '#94a3b8', fontSize: 9 }}
               unit="°C"
             />
-            {/* Depth on Y-Axis, reversed so 0m is at top */}
+            {/* Depth on Y-Axis (0 m at top), square-root scale */}
             <YAxis
-              dataKey="depth"
+              dataKey="depthAxis"
               type="number"
               reversed={true}
-              domain={[0, 1000]}
-              ticks={[0, 100, 250, 500, 750, 1000]}
+              domain={[0, toAxis(1000)]}
+              ticks={DEPTH_TICKS.map(toAxis)}
+              tickFormatter={(v: number) => `${Math.round(v * v)}m`}
               stroke="#64748b"
               tick={{ fill: '#94a3b8', fontSize: 9 }}
-              unit="m"
+              width={48}
             />
             <Tooltip
               content={({ active, payload }) => {
@@ -92,38 +99,14 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
                 return null;
               }}
             />
-            {/* Horizontal line at currently selected depth */}
-            <ReferenceLine
-              y={currentDepth}
-              stroke="#4fd1c5"
-              strokeWidth={2}
-              strokeDasharray="4 2"
-              label={{
-                value: `${currentDepth}m`,
-                fill: '#4fd1c5',
-                fontSize: 9,
-                position: 'right',
-              }}
-            />
-            {/* Derived markers: warm-layer depth (D20) and mixed-layer depth */}
-            {profile.derived?.d20 != null && (
-              <ReferenceLine
-                y={profile.derived.d20}
-                stroke="#f472b6"
-                strokeWidth={1.4}
-                strokeDasharray="2 3"
-                label={{ value: `D20 ${Math.round(profile.derived.d20)}m`, fill: '#f472b6', fontSize: 9, position: 'insideTopLeft' }}
-              />
-            )}
+            {/* Selected depth, warm-layer depth (D20) and mixed-layer depth; values are in the key below */}
             {profile.derived?.mld != null && (
-              <ReferenceLine
-                y={profile.derived.mld}
-                stroke="#facc15"
-                strokeWidth={1.4}
-                strokeDasharray="2 3"
-                label={{ value: `MLD ${Math.round(profile.derived.mld)}m`, fill: '#facc15', fontSize: 9, position: 'insideBottomLeft' }}
-              />
+              <ReferenceLine y={toAxis(profile.derived.mld)} stroke="#facc15" strokeWidth={1.8} strokeDasharray="5 3" />
             )}
+            {profile.derived?.d20 != null && (
+              <ReferenceLine y={toAxis(profile.derived.d20)} stroke="#f472b6" strokeWidth={1.8} strokeDasharray="5 3" />
+            )}
+            <ReferenceLine y={toAxis(currentDepth)} stroke="#4fd1c5" strokeWidth={1.5} strokeOpacity={0.8} />
             <Line
               type="monotone"
               dataKey="temperature"
@@ -135,6 +118,22 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
             />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Key for the reference lines */}
+      <div className="flex items-center justify-between gap-2 text-[10px] font-mono px-1 text-slate-300">
+        <span className="flex items-center gap-1.5" title="Mixed-layer depth: upper water stirred by the wind">
+          <span className="inline-block w-4 border-t-2 border-dashed border-[#facc15]" />
+          MLD <b className="text-[#facc15]">{profile.derived?.mld != null ? `${Math.round(profile.derived.mld)} m` : 'n/a'}</b>
+        </span>
+        <span className="flex items-center gap-1.5" title="Warm-layer depth: where the water cools to 20 °C (thermocline marker)">
+          <span className="inline-block w-4 border-t-2 border-dashed border-[#f472b6]" />
+          D20 <b className="text-[#f472b6]">{profile.derived?.d20 != null ? `${Math.round(profile.derived.d20)} m` : 'n/a'}</b>
+        </span>
+        <span className="flex items-center gap-1.5" title="Depth selected on the depth rail">
+          <span className="inline-block w-4 border-t-2 border-[#4fd1c5]" />
+          Selected <b className="text-[#4fd1c5]">{currentDepth} m</b>
+        </span>
       </div>
 
       {/* Min / Current / Max annotation row */}
