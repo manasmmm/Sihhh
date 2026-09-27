@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["backend/main.py"],
       "port": 8000
+    },
+    {
+      "name": "oceanembed-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "main:app", "--app-dir", "backend", "--port", "8010"],
+      "port": 8010
     }
   ]
 }

@@ -100,7 +100,7 @@ def render_temperature_png(
     if scale > 1:
         target_w = field_2d.shape[1] * scale
         target_h = field_2d.shape[0] * scale
-        img = img.resize((target_w, target_h), resample=Image.Resampling.BILINEAR)
+        img = img.resize((target_w, target_h), resample=Image.Resampling.BICUBIC)  # display smoothing only
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files

@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { DerivedVar, PfzRow } from '../types';
 import { getDerivedPngUrl } from '../api';
 import { CONFIDENCE_COLORS } from '../i18n';
+import { BasemapId, DEFAULT_BASEMAP, useBasemap } from '../basemaps';
 
 interface FisheriesMapProps {
   date: string | null;
@@ -12,6 +13,7 @@ interface FisheriesMapProps {
   selected: number | null;
   onSelect: (idx: number) => void;
   opacity?: number;
+  basemap?: BasemapId;
 }
 
 const DOMAIN: L.LatLngBoundsLiteral = [
@@ -19,7 +21,16 @@ const DOMAIN: L.LatLngBoundsLiteral = [
   [30.0, 105.0],
 ];
 
-export const FisheriesMap: React.FC<FisheriesMapProps> = ({ date, layer, bbox, rows, selected, onSelect, opacity = 0.75 }) => {
+export const FisheriesMap: React.FC<FisheriesMapProps> = ({
+  date,
+  layer,
+  bbox,
+  rows,
+  selected,
+  onSelect,
+  opacity = 0.75,
+  basemap = DEFAULT_BASEMAP,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const overlayRef = useRef<L.ImageOverlay | null>(null);
@@ -44,15 +55,6 @@ export const FisheriesMap: React.FC<FisheriesMapProps> = ({ date, layer, bbox, r
       zoomControl: false,
     });
     L.control.zoom({ position: 'topleft' }).addTo(m);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-      attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
-      maxZoom: 16,
-    }).addTo(m);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-      attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
-      maxZoom: 16,
-      pane: 'shadowPane',
-    }).addTo(m);
     markersRef.current = L.layerGroup().addTo(m);
     setMap(m);
     // Keep Leaflet in sync when the table panel below is resized
@@ -64,6 +66,8 @@ export const FisheriesMap: React.FC<FisheriesMapProps> = ({ date, layer, bbox, r
       setMap(null);
     };
   }, []);
+
+  useBasemap(map, basemap);
 
   // Background derived layer
   useEffect(() => {
