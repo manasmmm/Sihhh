@@ -79,7 +79,7 @@ moving through time, one location in detail, the ocean's structure, the big pict
 
 **[SCREEN ACTION]:** Click "Validation". Point at the chart, then slowly move down the table: first the rows from 0 to 30 m, then the deeper rows.
 
-**[NARRATION]:** A reconstruction is only useful if it can be trusted. The validation panel compares our output with the Glorys ocean reanalysis, on thirty one days in December twenty twenty four that the model never saw in training. In the upper thirty meters, the average error is zero point six to zero point nine degrees Celsius, with a correlation of up to zero point nine one. Deeper in the thermocline, the error grows, and we show that honestly.
+**[NARRATION]:** A reconstruction is only useful if it can be trusted. The validation panel compares our output with the Glorys ocean reanalysis, on thirty one days in December twenty twenty four that the model never saw in training. In the upper thirty meters, the typical error is zero point six to zero point nine degrees Celsius, with a correlation of up to zero point nine one. Deeper in the thermocline, the error grows, and we show that honestly.
 
 ### Scene 12: Taking the data further
 
