@@ -38,7 +38,7 @@ def render_derived_png(field: np.ndarray, var: str, scale: int = 4) -> Tuple[byt
             rgba[nan_mask, 3] = 0
             img = Image.fromarray(np.flipud(rgba), mode="RGBA")
             if scale > 1:
-                img = img.resize((w * scale, h * scale), resample=Image.Resampling.BILINEAR)
+                img = img.resize((w * scale, h * scale), resample=Image.Resampling.BICUBIC)  # display smoothing only
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files

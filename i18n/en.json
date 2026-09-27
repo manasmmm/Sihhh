@@ -9,6 +9,7 @@
   "fish.subtitle": "INCOIS PFZ + OceanEmbed subsurface layer",
   "fish.sector": "Sector",
   "fish.date": "Date",
+  "fish.basemap": "Map",
   "fish.background": "Background layer",
   "fish.species": "Species",
   "fish.species_none": "No species",

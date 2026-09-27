@@ -11,6 +11,7 @@ import {
   Upload,
   AlertTriangle,
   Layers,
+  Map as MapIcon,
 } from 'lucide-react';
 import { MapView } from './components/MapView';
 import { DepthSlider } from './components/DepthSlider';
@@ -41,6 +42,7 @@ import {
   uploadModelOutput,
 } from './api';
 import { useI18n } from './i18n';
+import { BASEMAPS, BasemapId, loadBasemapChoice, saveBasemapChoice } from './basemaps';
 
 // Explorer colour-layer options (derived layers are optional in this tab)
 const EXPLORER_LAYERS: { value: MapLayer; label: string }[] = [
@@ -83,6 +85,11 @@ export const App: React.FC = () => {
   const [lang, setLang] = useState<string>('en');
   const [fisheriesDate, setFisheriesDate] = useState<string | null>(null);
   const [mapLayer, setMapLayer] = useState<MapLayer>('thetao');
+  const [basemap, setBasemapState] = useState<BasemapId>(loadBasemapChoice);
+  const setBasemap = useCallback((id: BasemapId) => {
+    setBasemapState(id);
+    saveBasemapChoice(id);
+  }, []);
   const [showValidation, setShowValidation] = useState<boolean>(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -315,6 +322,8 @@ export const App: React.FC = () => {
             t={t}
             isDraft={isDraft}
             onDateChange={setFisheriesDate}
+            basemap={basemap}
+            onBasemapChange={setBasemap}
           />
         </div>
       ) : (
@@ -322,6 +331,7 @@ export const App: React.FC = () => {
       {/* 1. Base Map Layer */}
       <MapView
         layer={mapLayer}
+        basemap={basemap}
         currentDate={currentDate}
         currentDepth={currentDepth}
         pinnedPoints={pinnedPoints}
@@ -465,6 +475,23 @@ export const App: React.FC = () => {
             {EXPLORER_LAYERS.map((l) => (
               <option key={l.value} value={l.value}>
                 {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Background map */}
+        <div className="flex items-center gap-2.5 text-[10px] text-slate-500">
+          <MapIcon size={10} className="text-slate-600 flex-shrink-0" />
+          <span className="flex-shrink-0">Map</span>
+          <select
+            value={basemap}
+            onChange={(e) => setBasemap(e.target.value as BasemapId)}
+            className="w-full bg-[#0b1322] border border-white/10 rounded-md px-1.5 py-1 text-[10.5px] text-slate-100 focus:outline-none focus:border-[#4fd1c5]/50"
+          >
+            {BASEMAPS.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
               </option>
             ))}
           </select>

@@ -9,6 +9,7 @@ import { AdvisoryTable } from './AdvisoryTable';
 import { PfzPopup } from './PfzPopup';
 import { DerivedLegend } from './DerivedLegend';
 import { FishermanMessageModal } from './FishermanMessageModal';
+import { BASEMAPS, BasemapId } from '../basemaps';
 
 interface FisheriesTabProps {
   depths: number[];
@@ -17,6 +18,8 @@ interface FisheriesTabProps {
   t: TFunc;
   isDraft: boolean;
   onDateChange: (date: string | null) => void;
+  basemap: BasemapId;
+  onBasemapChange: (id: BasemapId) => void;
 }
 
 type BgLayer = DerivedVar | 'none';
@@ -54,7 +57,16 @@ const Control: React.FC<{ label: string; children: React.ReactNode }> = ({ label
 const selectCls =
   'bg-[#0b1322] border border-white/10 rounded-lg px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus:border-[#4fd1c5]/50';
 
-export const FisheriesTab: React.FC<FisheriesTabProps> = ({ depths, lang, onLangChange, t, isDraft, onDateChange }) => {
+export const FisheriesTab: React.FC<FisheriesTabProps> = ({
+  depths,
+  lang,
+  onLangChange,
+  t,
+  isDraft,
+  onDateChange,
+  basemap,
+  onBasemapChange,
+}) => {
   const [sectors, setSectors] = useState<PfzSector[]>([]);
   const [sectorCode, setSectorCode] = useState<string>('GOA');
   const [date, setDate] = useState<string | null>(null);
@@ -193,6 +205,16 @@ export const FisheriesTab: React.FC<FisheriesTabProps> = ({ depths, lang, onLang
           </select>
         </Control>
 
+        <Control label={t('fish.basemap')}>
+          <select className={selectCls} value={basemap} onChange={(e) => onBasemapChange(e.target.value as BasemapId)}>
+            {BASEMAPS.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </Control>
+
         {configuredSpecies.length > 0 ? (
           <Control label={t('fish.species')}>
             <select className={selectCls} value={speciesName} onChange={(e) => setSpeciesName(e.target.value)}>
@@ -266,6 +288,7 @@ export const FisheriesTab: React.FC<FisheriesTabProps> = ({ depths, lang, onLang
           rows={rows}
           selected={selected}
           onSelect={handleSelect}
+          basemap={basemap}
         />
 
         {/* Status messages */}

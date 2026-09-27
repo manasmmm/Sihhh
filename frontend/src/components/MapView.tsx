@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { PinnedPoint, ArgoFloat, MapLayer } from '../types';
 import { getDerivedPngUrl } from '../api';
+import { BasemapId, DEFAULT_BASEMAP, useBasemap } from '../basemaps';
 
 interface MapViewProps {
   currentDate: string;
@@ -14,6 +15,7 @@ interface MapViewProps {
   onRemovePin: (id: string) => void;
   overlayOpacity: number;
   layer?: MapLayer;
+  basemap?: BasemapId;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
@@ -27,6 +29,7 @@ export const MapView: React.FC<MapViewProps> = ({
   onRemovePin,
   overlayOpacity,
   layer = 'thetao',
+  basemap = DEFAULT_BASEMAP,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<L.Map | null>(null);
@@ -66,24 +69,6 @@ export const MapView: React.FC<MapViewProps> = ({
     // Custom Zoom control at top-right
     L.control.zoom({ position: 'topright' }).addTo(mapInstance);
 
-    // Esri Dark Gray Canvas basemap (key-free) + reference layer for city/place labels
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      {
-        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
-        maxZoom: 16,
-      }
-    ).addTo(mapInstance);
-
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-      {
-        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
-        maxZoom: 16,
-        pane: 'shadowPane',
-      }
-    ).addTo(mapInstance);
-
     // Domain bounding box outline (elegant glowing cyan dashed frame)
     L.rectangle(domainBounds, {
       color: '#4fd1c5',
@@ -114,6 +99,8 @@ export const MapView: React.FC<MapViewProps> = ({
       setMap(null);
     };
   }, []);
+
+  useBasemap(map, basemap);
 
   // Update ImageOverlay whenever map, date, depth, opacity, or adaptive contrast changes
   useEffect(() => {
