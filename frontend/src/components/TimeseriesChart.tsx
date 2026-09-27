@@ -11,6 +11,8 @@ import {
 } from 'recharts';
 import { TimeseriesResponse } from '../types';
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 interface TimeseriesChartProps {
   timeseries: TimeseriesResponse;
   currentDate: string;
@@ -24,12 +26,7 @@ export const TimeseriesChart: React.FC<TimeseriesChartProps> = ({
     return timeseries.dates.map((d, i) => {
       // Short label: "Jan 15"
       const parts = d.split('-');
-      const monthNames = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      const shortLabel = `${monthNames[mIdx]} ${parts[2]}`;
+      const shortLabel = `${MONTHS[parseInt(parts[1], 10) - 1]} ${parts[2]}`;
 
       return {
         date: d,
@@ -38,6 +35,9 @@ export const TimeseriesChart: React.FC<TimeseriesChartProps> = ({
       };
     });
   }, [timeseries]);
+
+  const selectedIdx = timeseries.dates.indexOf(currentDate);
+  const selectedInFirstHalf = selectedIdx < 0 || selectedIdx < timeseries.dates.length / 2;
 
   // Compute domain bounds
   const yDomain = useMemo(() => {
@@ -62,18 +62,18 @@ export const TimeseriesChart: React.FC<TimeseriesChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 8, right: 12, left: -16, bottom: 4 }}
+            margin={{ top: 18, right: 14, left: -16, bottom: 4 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
             <XAxis
               dataKey="date"
               stroke="#64748b"
               tick={{ fill: '#94a3b8', fontSize: 9 }}
-              interval={24}
+              interval="preserveStartEnd"
+              minTickGap={28}
               tickFormatter={(val: string) => {
                 const p = val.split('-');
-                const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May'][parseInt(p[1], 10) - 1];
-                return `${m} ${p[2]}`;
+                return `${MONTHS[parseInt(p[1], 10) - 1] ?? ''} ${parseInt(p[2], 10)}`;
               }}
             />
             <YAxis
@@ -106,10 +106,12 @@ export const TimeseriesChart: React.FC<TimeseriesChartProps> = ({
               strokeWidth={2}
               strokeDasharray="4 2"
               label={{
-                value: 'Selected',
+                value: 'Selected day',
                 fill: '#fb923c',
                 fontSize: 9,
-                position: 'top',
+                // label on the side of the line with room: right of it early in the period, left of it later
+                position: selectedInFirstHalf ? 'insideTopLeft' : 'insideTopRight',
+                offset: 4,
               }}
             />
             <Line

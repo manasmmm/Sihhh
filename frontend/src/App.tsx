@@ -555,7 +555,6 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {showValidation && <ValidationPanel onClose={() => setShowValidation(false)} />}
       </div>
 
       {/* 3. Floating Pinned Inspection Cards */}
@@ -638,6 +637,9 @@ export const App: React.FC = () => {
       )}
     </div>
       )}
+
+      {/* Validation window (centred over the page) */}
+      {showValidation && activeTab === 'explorer' && <ValidationPanel onClose={() => setShowValidation(false)} />}
 
       {/* Download / upload result toast */}
       {toast && (

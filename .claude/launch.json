@@ -12,6 +12,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "uvicorn", "main:app", "--app-dir", "backend", "--port", "8010"],
       "port": 8010
+    },
+    {
+      "name": "oceanembed-preview-files",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set DATA_SOURCE=files&& python -m uvicorn main:app --app-dir backend --port 8011"],
+      "port": 8011
     }
   ]
 }
