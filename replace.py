@@ -1,10 +1,10 @@
 import sys
 content = open('frontend/src/App.tsx').read()
 target = '''<div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                  Vision Transformer (ViT)
+                  Graph Neural Network (GNN-OAM)
                 </div>'''
 replacement = '''<div className="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center gap-2">
-                  Vision Transformer (ViT)
+                  Graph Neural Network (GNN-OAM)
                   {metadata && (
                     <DataSourceBadge 
                       dataSource={metadata.data_source || 'mock'} 

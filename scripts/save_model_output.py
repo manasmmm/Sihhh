@@ -10,7 +10,7 @@ LONS = [round(45.0 + i * 0.25, 2) for i in range(241)]
 DEPTHS_M = [0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000]
 
 def save_model_output(pred: np.ndarray, day: str, out_dir: str = "data/model_output",
-                      model_version: str = "oceanembed-vit-v1"):
+                      model_version: str = "oceanembed-gnn-oam-v1"):
     """
     pred: numpy array (15, 101, 241) in degC, depth order
     0..1000 m, lat 5->30 ascending, lon 45->105 ascending,

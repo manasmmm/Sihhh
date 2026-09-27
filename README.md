@@ -8,7 +8,7 @@
 
 ## Overview
 
-**OceanEmbed Viewer** is a high-performance web dashboard that visualizes 3D subsurface ocean potential temperature ($\theta_o$) reconstructed by deep learning (`OceanEmbed-Attn3D-UNet++`) from surface satellite observations.
+**OceanEmbed Viewer** is a high-performance web dashboard that visualizes 3D subsurface ocean potential temperature ($\theta_o$) reconstructed by a graph neural network (`OceanEmbed GNN-OAM`, with an XGBoost tree stage) from surface satellite observations.
 
 ### Domain & Grid Contract
 - **Region**: North Indian Ocean ($5.0^\circ\text{N}$ to $30.0^\circ\text{N}$, $45.0^\circ\text{E}$ to $105.0^\circ\text{E}$)

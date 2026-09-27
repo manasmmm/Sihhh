@@ -359,7 +359,7 @@ export const App: React.FC = () => {
                 </span>
               </div>
               <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                Vision Transformer (ViT)
+                Graph Neural Network (GNN-OAM)
               </div>
             </div>
           </div>
