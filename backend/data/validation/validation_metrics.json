@@ -1,113 +1,114 @@
 {
-  "status": "placeholder",
-  "reference": "INCOIS gridded ARGO",
-  "period": "TODO",
-  "_comment": "TODO(team): overwrite with real per-depth results from your evaluation script and set status to 'final'. Never put made-up numbers here.",
+  "status": "final",
+  "reference": "GLORYS12 reanalysis (Copernicus), regridded to 0.25 deg / 15 standard depths - held-out days",
+  "period": "2024-12-01 to 2024-12-31, 31 day(s) (2024 held-out split)",
+  "model_version": "OceanEmbed GNN-OAM C_full epoch 20 + XGBoost stage",
+  "checkpoint": "gnn_C_full_epoch_20.pt",
   "metrics": [
     {
       "depth_m": 0,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 0.8913,
+      "bias_c": 0.2625,
+      "corr": 0.8308,
+      "n": 367474
     },
     {
       "depth_m": 5,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 0.7648,
+      "bias_c": -0.1186,
+      "corr": 0.8671,
+      "n": 367474
     },
     {
       "depth_m": 10,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 0.6426,
+      "bias_c": 0.2875,
+      "corr": 0.9091,
+      "n": 356159
     },
     {
       "depth_m": 20,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 0.6663,
+      "bias_c": -0.1057,
+      "corr": 0.8799,
+      "n": 347417
     },
     {
       "depth_m": 30,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 0.6204,
+      "bias_c": -0.0616,
+      "corr": 0.8976,
+      "n": 337125
     },
     {
       "depth_m": 50,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.0907,
+      "bias_c": -0.2685,
+      "corr": 0.7831,
+      "n": 322369
     },
     {
       "depth_m": 75,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.6231,
+      "bias_c": 0.3564,
+      "corr": 0.7375,
+      "n": 309442
     },
     {
       "depth_m": 100,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.7311,
+      "bias_c": -0.1567,
+      "corr": 0.7165,
+      "n": 302653
     },
     {
       "depth_m": 125,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.8784,
+      "bias_c": 0.8231,
+      "corr": 0.6392,
+      "n": 301072
     },
     {
       "depth_m": 150,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.6902,
+      "bias_c": 0.477,
+      "corr": 0.5098,
+      "n": 299584
     },
     {
       "depth_m": 200,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.41,
+      "bias_c": 0.2268,
+      "corr": 0.5816,
+      "n": 296887
     },
     {
       "depth_m": 300,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 2.0935,
+      "bias_c": 1.4587,
+      "corr": 0.3703,
+      "n": 294252
     },
     {
       "depth_m": 500,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.4039,
+      "bias_c": 0.6608,
+      "corr": 0.3061,
+      "n": 289199
     },
     {
       "depth_m": 700,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.1277,
+      "bias_c": 0.3507,
+      "corr": 0.4557,
+      "n": 285510
     },
     {
       "depth_m": 1000,
-      "rmse_c": null,
-      "bias_c": null,
-      "corr": null,
-      "n": null
+      "rmse_c": 1.8871,
+      "bias_c": 1.2248,
+      "corr": -0.3058,
+      "n": 278163
     }
   ]
 }

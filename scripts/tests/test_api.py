@@ -25,11 +25,25 @@ from fastapi.testclient import TestClient  # noqa: E402
 from main import app  # noqa: E402
 from save_model_output import save_model_output  # noqa: E402
 
-SAMPLE = os.path.join(BACKEND, "data", "model_output", "thetao_2026-09-25.nc")
+# Sample model-output file generated from mock data (never read from the real data folder)
+_SAMPLE_DIR = tempfile.mkdtemp(prefix="oe_sample_")
+SAMPLE = os.path.join(_SAMPLE_DIR, "thetao_2026-09-25.nc")
+
+
+def _make_sample():
+    if not os.path.exists(SAMPLE):
+        from providers.mock_provider import MockProvider
+        arr = MockProvider().get_temperature("2026-09-25")["thetao"].values
+        save_model_output(arr, "2026-09-25", out_dir=_SAMPLE_DIR, model_version="TEST-FILE-FROM-MOCK")
+
+
+def setUpModule():
+    _make_sample()
 
 
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)
+    shutil.rmtree(_SAMPLE_DIR, ignore_errors=True)
 
 
 class ApiTestCase(unittest.TestCase):
@@ -113,9 +127,13 @@ class TestMockMode(ApiTestCase):
 
     def test_validation_placeholder(self):
         v = self.client.get("/api/v1/validation").json()
-        self.assertEqual(v["status"], "placeholder")
-        self.assertEqual(v["message"], "Validation results pending")
-        self.assertTrue(all(m["rmse_c"] is None for m in v["metrics"]))
+        self.assertEqual(len(v["metrics"]), 15)
+        if v["status"] == "final":          # the team's real results
+            self.assertNotIn("message", v)
+            self.assertTrue(any(m["rmse_c"] is not None for m in v["metrics"]))
+        else:                               # shipped placeholder
+            self.assertEqual(v["message"], "Validation results pending")
+            self.assertTrue(all(m["rmse_c"] is None for m in v["metrics"]))
 
     def test_netcdf_exports(self):
         import xarray as xr
