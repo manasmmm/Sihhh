@@ -52,13 +52,6 @@ def parse_file_name(path: str):
     return m.group(1), ("netcdf" if m.group(2) == "nc" else "numpy")
 
 
-def _find_coord(ds, names):
-    for n in names:
-        if n in ds.variables:
-            return ds[n].values
-    return None
-
-
 def validate_file(path: str, land_mask: Optional[np.ndarray] = None) -> ValidationResult:
     """Validate one model output file. Never raises; problems go to .errors.
 
@@ -134,41 +127,63 @@ def _load_numpy(path: str, res: ValidationResult) -> Optional[np.ndarray]:
     return _check_shape(np.asarray(arr), os.path.basename(path), res)
 
 
+def _read_nc(path: str):
+    """-> (data_var_names, var_dims, var_values, {name: coord_values}).
+
+    Uses netCDF4 directly (about 20x faster than xarray.open_dataset, which matters on
+    small hosting CPUs where every file is read at start-up); xarray is the fallback."""
+    coord_names = ("depth", "lev", "level", "deptht", "z", "lat", "latitude", "lon", "longitude")
+    try:
+        import netCDF4
+        with netCDF4.Dataset(path) as nc:
+            data_vars = [v for v in nc.variables if v not in nc.dimensions]
+            coords = {n: np.asarray(nc.variables[n][:], dtype=float) for n in coord_names if n in nc.variables}
+            if MODEL_OUTPUT_VAR not in nc.variables:
+                return data_vars, None, None, coords
+            v = nc.variables[MODEL_OUTPUT_VAR]
+            vals = np.ma.filled(np.ma.asarray(v[:]).astype(np.float32), np.nan)   # _FillValue -> NaN
+            return data_vars, tuple(v.dimensions), vals, coords
+    except ImportError:
+        import xarray as xr
+        with xr.open_dataset(path) as ds:
+            coords = {n: np.asarray(ds[n].values, dtype=float) for n in coord_names if n in ds.variables}
+            if MODEL_OUTPUT_VAR not in ds.data_vars:
+                return list(ds.data_vars), None, None, coords
+            da = ds[MODEL_OUTPUT_VAR]
+            return list(ds.data_vars), tuple(da.dims), np.asarray(da.values), coords
+
+
 def _load_netcdf(path: str, res: ValidationResult) -> Optional[np.ndarray]:
-    import xarray as xr
-
     name = os.path.basename(path)
-    with xr.open_dataset(path) as ds:
-        if MODEL_OUTPUT_VAR not in ds.data_vars:
-            res.errors.append(
-                f"{name}: variable '{MODEL_OUTPUT_VAR}' not found (found: {list(ds.data_vars)})"
-            )
-            return None
-        da = ds[MODEL_OUTPUT_VAR]
+    data_vars, dims, vals, coords = _read_nc(path)
+    if vals is None:
+        res.errors.append(f"{name}: variable '{MODEL_OUTPUT_VAR}' not found (found: {data_vars})")
+        return None
 
-        # Put dimensions in (time?, depth, lat, lon) order if named sensibly
-        dim_alias = {}
-        for d in da.dims:
-            dl = d.lower()
-            if dl in ("depth", "lev", "level", "z", "deptht"):
-                dim_alias[d] = "depth"
-            elif dl in ("lat", "latitude", "y"):
-                dim_alias[d] = "lat"
-            elif dl in ("lon", "longitude", "x"):
-                dim_alias[d] = "lon"
-            elif dl in ("time", "t"):
-                dim_alias[d] = "time"
-        if {"depth", "lat", "lon"} <= set(dim_alias.values()):
-            order = [d for tgt in ("time", "depth", "lat", "lon") for d, a in dim_alias.items() if a == tgt]
-            da = da.transpose(*order)
+    # Put dimensions in (time?, depth, lat, lon) order if named sensibly
+    dim_alias = {}
+    for d in dims:
+        dl = d.lower()
+        if dl in ("depth", "lev", "level", "z", "deptht"):
+            dim_alias[d] = "depth"
+        elif dl in ("lat", "latitude", "y"):
+            dim_alias[d] = "lat"
+        elif dl in ("lon", "longitude", "x"):
+            dim_alias[d] = "lon"
+        elif dl in ("time", "t"):
+            dim_alias[d] = "time"
+    if {"depth", "lat", "lon"} <= set(dim_alias.values()):
+        order = [d for tgt in ("time", "depth", "lat", "lon") for d, a in dim_alias.items() if a == tgt]
+        vals = np.transpose(vals, [dims.index(d) for d in order])
 
-        arr = _check_shape(np.asarray(da.values), name, res)
-        if arr is None:
-            return None
+    arr = _check_shape(np.asarray(vals), name, res)
+    if arr is None:
+        return None
 
-        depths = _find_coord(ds, ["depth", "lev", "level", "deptht", "z"])
-        lats = _find_coord(ds, ["lat", "latitude"])
-        lons = _find_coord(ds, ["lon", "longitude"])
+    first = lambda names: next((coords[n] for n in names if n in coords), None)  # noqa: E731
+    depths = first(["depth", "lev", "level", "deptht", "z"])
+    lats = first(["lat", "latitude"])
+    lons = first(["lon", "longitude"])
 
     if depths is not None:
         depths = np.asarray(depths, dtype=float)

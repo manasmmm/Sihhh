@@ -41,7 +41,7 @@ def render_derived_png(field: np.ndarray, var: str, scale: int = 4) -> Tuple[byt
                 img = img.resize((w * scale, h * scale), resample=Image.Resampling.BILINEAR)
 
     buf = io.BytesIO()
-    img.save(buf, format="PNG", optimize=True)
+    img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files
     return buf.getvalue(), vmin, vmax
 
 
