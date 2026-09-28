@@ -39,7 +39,7 @@ import {
   derivedNetcdfUrl,
   uploadModelOutput,
 } from './api';
-import { useI18n } from './i18n';
+import { useI18n, displayDate } from './i18n';
 import { BASEMAPS, BasemapId, loadBasemapChoice, saveBasemapChoice } from './basemaps';
 
 // Explorer colour-layer options (derived layers are optional in this tab)
@@ -394,7 +394,7 @@ export const App: React.FC = () => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500 text-[11px]">Timestamp</span>
-            <span className="font-mono text-white text-[11px]">{currentDate}</span>
+            <span className="font-mono text-white text-[11px]">{displayDate(currentDate)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500 text-[11px]">Domain</span>
@@ -506,7 +506,7 @@ export const App: React.FC = () => {
             type="button"
             onClick={() => handleDownload('thetao')}
             disabled={busy !== null}
-            title={`Download CF-1.8 NetCDF of thetao for ${currentDate}`}
+            title={`Download CF-1.8 NetCDF of thetao for ${displayDate(currentDate)}`}
             className="px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white border border-white/5 disabled:opacity-50"
           >
             <Download size={11} />
@@ -516,7 +516,7 @@ export const App: React.FC = () => {
             type="button"
             onClick={() => handleDownload('derived')}
             disabled={busy !== null}
-            title={`Download NetCDF of derived layers for ${currentDate}`}
+            title={`Download NetCDF of derived layers for ${displayDate(currentDate)}`}
             className="px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white border border-white/5 disabled:opacity-50"
           >
             <Download size={11} />

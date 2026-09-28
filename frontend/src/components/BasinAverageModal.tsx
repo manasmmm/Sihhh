@@ -11,6 +11,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { fetchBasinAverage } from '../api';
+import { displayDate } from '../i18n';
 import { BasinAverageData } from '../types';
 
 interface BasinAverageModalProps {
@@ -125,7 +126,7 @@ export const BasinAverageModal: React.FC<BasinAverageModalProps> = ({
                       const row = payload[0].payload;
                       return (
                         <div className="p-2 rounded bg-slate-900/95 border border-[#4fd1c5]/40 text-[11px] font-mono text-white">
-                          <div>Date: {row.date}</div>
+                          <div>Date: {displayDate(row.date)}</div>
                           <div className="text-[#4fd1c5] font-bold">
                             Basin Mean: {row.temperature} °C
                           </div>

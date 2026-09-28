@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { displayDate } from '../i18n';
 import {
   LineChart,
   Line,
@@ -50,7 +51,7 @@ export const ProfileChart: React.FC<ProfileChartProps> = ({
           Vertical Temperature Profile
         </span>
         <span className="text-slate-400 font-mono text-[10px]">
-          {profile.date}
+          {displayDate(profile.date)}
         </span>
       </div>
 
