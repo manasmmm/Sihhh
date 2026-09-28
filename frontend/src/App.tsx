@@ -50,8 +50,6 @@ const EXPLORER_LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'front_0m', label: 'Front strength at 0 m' },
   { value: 'front_50m', label: 'Front strength at 50 m' },
   { value: 'front_100m', label: 'Front strength at 100 m' },
-  { value: 'subsurface_front_flag', label: 'Subsurface-only fronts' },
-  { value: 'confidence', label: 'Confidence (data density)' },
 ];
 
 const META_REFRESH_MS = 30000;
