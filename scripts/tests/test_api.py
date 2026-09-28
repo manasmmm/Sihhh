@@ -224,7 +224,7 @@ class TestModelModeWithoutArtifacts(ApiTestCase):
             config.DATA_SOURCE = "model"
             r = self.client.get("/api/v1/meta")
             self.assertEqual(r.status_code, 404)
-            self.assertIn("gnn_C_full_epoch_20.pt not found", r.json()["detail"])
+            self.assertIn(f"{config.GNN_CHECKPOINT_NAME} not found", r.json()["detail"])
             self.assertEqual(self.client.get("/api/v1/metadata").status_code, 404)
         finally:
             config.GNN_ARTIFACTS_DIR = old

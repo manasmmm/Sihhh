@@ -64,11 +64,11 @@ UPLOAD_MAX_BYTES = 200 * 1024 * 1024
 # keep them identical to the run that produced the checkpoint.
 # =============================================================================
 GNN_ARTIFACTS_DIR = os.environ.get("GNN_ARTIFACTS_DIR", os.path.join(BACKEND_DIR, "model_artifacts"))
-GNN_CHECKPOINT_NAME = os.environ.get("GNN_CHECKPOINT_NAME", "gnn_C_full_epoch_20.pt")
+GNN_CHECKPOINT_NAME = os.environ.get("GNN_CHECKPOINT_NAME", "gnn_C_full_epoch_28.pt")
 GNN_VARIANT = "C_full"                        # A_base / B_skip / C_full
 GNN_USE_SKIP = GNN_VARIANT in ("B_skip", "C_full")
 GNN_MODEL_VERSION = os.environ.get(
-    "GNN_MODEL_VERSION", "OceanEmbed GNN-OAM C_full epoch 20 + XGBoost stage")
+    "GNN_MODEL_VERSION", "OceanEmbed GNN-OAM C_full epoch 28 + XGBoost stage")
 GNN_CACHE_STAGES = ["finetune", "finetune2024"]   # <stage>_x.npy / _t.npy / _meta.json input caches
 GNN_OUTPUT_CACHE_DIR = os.path.join(DATA_DIR, "gnn_output")   # reconstructed days are stored here once computed
 GNN_T_WINDOW = 30

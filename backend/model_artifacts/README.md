@@ -4,7 +4,7 @@ Copy files from `/kaggle/working/OceanEmbed_run/` into this folder (any sub-fold
 
 | File | Needed | From |
 |---|---|---|
-| `gnn_C_full_epoch_20.pt` | yes | `checkpoints/` |
+| `gnn_C_full_epoch_28.pt` | yes | `checkpoints/` |
 | `depth_cluster.json`, `season_regime.json` | yes | `gnn_artifacts/` |
 | `rf_model_0.joblib`, `rf_model_1.joblib`, `rf_model_2.joblib` (tree / XGBoost stage) | yes | `gnn_artifacts/` |
 | `finetune2024_x.npy`, `finetune2024_t.npy`, `finetune2024_meta.json` | for 2024 days | `cache/` |

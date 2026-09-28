@@ -15,6 +15,7 @@ def make_fake_run(root, n_days=40, start="2023-06-01", with_y=True, with_z=False
     from sklearn.ensemble import RandomForestRegressor
     from gnn_engine.model import OceanEmbedGNNOAM
     from model_bridge import get_land_mask
+    import config
 
     rng = np.random.default_rng(seed)
     cache = os.path.join(root, "OceanEmbed_run", "cache")
@@ -65,5 +66,5 @@ def make_fake_run(root, n_days=40, start="2023-06-01", with_y=True, with_z=False
             torch.nn.init.normal_(p, std=0.5)
     model.season_labels_lut.copy_(torch.as_tensor(np.arange(52) * M // 52))
     torch.save({"model_state": model.state_dict(), "epoch": 20, "val_loss": 0.01,
-                "cfg_model": {"K": K, "M": M}}, os.path.join(ckdir, "gnn_C_full_epoch_20.pt"))
+                "cfg_model": {"K": K, "M": M}}, os.path.join(ckdir, config.GNN_CHECKPOINT_NAME))
     return times

@@ -53,7 +53,7 @@ class TestGnnModelMode(unittest.TestCase):
     def test_meta_and_field(self):
         m = self.client.get("/api/v1/meta").json()
         self.assertEqual(m["data_source"], "model")
-        self.assertIn("epoch 20", m["model_version"])
+        self.assertEqual(m["model_version"], config.GNN_MODEL_VERSION)
         dates = m["dates"]["all_dates"]
         self.assertEqual(dates[0], "2023-06-30")           # first day with a full 30-day window
         self.assertEqual(len(dates), 6)

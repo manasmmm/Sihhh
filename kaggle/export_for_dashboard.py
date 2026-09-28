@@ -13,7 +13,7 @@
 # backend needs to run the model itself (DATA_SOURCE=model) -> unzip into backend/model_artifacts/
 import zipfile
 
-EXPORT_CHECKPOINT = f"{CFG['CHECKPOINT_DIR']}/gnn_C_full_epoch_20.pt"   # the epoch you want to show
+EXPORT_CHECKPOINT = f"{CFG['CHECKPOINT_DIR']}/gnn_C_full_epoch_28.pt"   # the epoch you want to show
 EXPORT_VARIANT = "C_full"
 EXPORT_PERIOD = "2024"          # "2024" (fine-tune year, needs Sections 24-26) or "2023" (original test year)
 EXPORT_START, EXPORT_END = None, None   # e.g. "2024-12-01", "2024-12-31"; None = whole held-out split
@@ -21,7 +21,7 @@ EXPORT_STRIDE = 1               # every Nth day (raise to keep the zip small)
 EXPORT_MAX_DAYS = 31            # safety cap on the number of daily files
 EXPORT_ARTIFACTS = False        # True -> also zip checkpoint + tree models + cluster JSONs + input cache
 EXPORT_DIR = "/kaggle/working/dashboard_export"
-MODEL_VERSION = "OceanEmbed GNN-OAM C_full epoch 20 + XGBoost stage"
+MODEL_VERSION = "OceanEmbed GNN-OAM C_full epoch 28 + XGBoost stage"
 
 _STANDARD_LATS = np.round(np.arange(101) * 0.25 + 5.0, 2)
 _STANDARD_LONS = np.round(np.arange(241) * 0.25 + 45.0, 2)

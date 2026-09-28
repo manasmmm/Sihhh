@@ -5,7 +5,7 @@ Copy the notebook's /kaggle/working/OceanEmbed_run folder (or just the files bel
 anywhere under backend/model_artifacts/. Files are found by name, so the folder
 layout does not matter:
 
-  required  <GNN_CHECKPOINT_NAME>            e.g. gnn_C_full_epoch_20.pt
+  required  <GNN_CHECKPOINT_NAME>            e.g. gnn_C_full_epoch_28.pt
   required  depth_cluster.json, season_regime.json
   required  <stage>_x.npy, <stage>_t.npy, <stage>_meta.json   (stage = finetune and/or finetune2024)
   optional  <stage>_y.npy                    exact GLORYS ocean / sea-floor mask (else the dashboard land mask)
