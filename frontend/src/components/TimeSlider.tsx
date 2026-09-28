@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Calendar,
 } from 'lucide-react';
+import { displayDate } from '../i18n';
 
 interface TimeSliderProps {
   dates: string[];
@@ -32,7 +33,7 @@ export const TimeSlider: React.FC<TimeSliderProps> = ({
     if (!currentDate) return '';
     try {
       const parts = currentDate.split('-');
-      const year = parts[0];
+      const year = displayDate(currentDate).split('-')[0];
       const monthIndex = parseInt(parts[1], 10) - 1;
       const day = parseInt(parts[2], 10);
       const months = [
@@ -60,7 +61,7 @@ export const TimeSlider: React.FC<TimeSliderProps> = ({
         ];
         ticks.push({
           index: idx,
-          label: `${months[monthNum]} ${parts[0]}`,
+          label: `${months[monthNum]} ${displayDate(d).split('-')[0]}`,
           percent: dates.length > 1 ? (idx / (dates.length - 1)) * 100 : 0,
         });
         lastMonth = monthYear;
@@ -136,7 +137,7 @@ export const TimeSlider: React.FC<TimeSliderProps> = ({
               {formattedDate}
             </span>
             <span className="text-[10px] text-slate-400 font-mono">
-              Day {validIndex + 1} of {dates.length} • {currentDate}
+              Day {validIndex + 1} of {dates.length} • {displayDate(currentDate)}
             </span>
           </div>
         </div>
