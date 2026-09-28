@@ -9,11 +9,12 @@ from PIL import Image
 from scipy.ndimage import distance_transform_edt
 
 import config
+from raster import encode_image
 
 FLAG_RGBA = (244, 114, 182, 235)  # pink: subsurface-only front present
 
 
-def render_derived_png(field: np.ndarray, var: str, scale: int = 4) -> Tuple[bytes, float, float]:
+def render_derived_png(field: np.ndarray, var: str, scale: int = 4, fmt: str = "png") -> Tuple[bytes, float, float]:
     disp = config.DERIVED_DISPLAY[var]
     vmin, vmax = float(disp["vmin"]), float(disp["vmax"])
     nan_mask = np.isnan(field)
@@ -40,9 +41,7 @@ def render_derived_png(field: np.ndarray, var: str, scale: int = 4) -> Tuple[byt
             if scale > 1:
                 img = img.resize((w * scale, h * scale), resample=Image.Resampling.BICUBIC)  # display smoothing only
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files
-    return buf.getvalue(), vmin, vmax
+    return encode_image(img, fmt), vmin, vmax
 
 
 def colormap_stops(var: str, n: int = 9):

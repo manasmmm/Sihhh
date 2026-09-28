@@ -18,6 +18,21 @@ MAGMA_CMAP = mpl.colormaps["magma"]
 TURBO_CMAP = mpl.colormaps["turbo"]
 
 
+IMAGE_MEDIA_TYPES = {"png": "image/png", "webp": "image/webp"}
+
+
+def encode_image(img: Image.Image, fmt: str = "png") -> bytes:
+    """PNG (default, lossless) or WebP (about 5x smaller at no visible cost, faster to
+    encode; used by the dashboard so map images load quickly over slow connections).
+    Transparency (land) is kept exactly in both."""
+    buf = io.BytesIO()
+    if fmt == "webp":
+        img.save(buf, format="WEBP", quality=90, method=0)
+    else:
+        img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files
+    return buf.getvalue()
+
+
 def render_temperature_png(
     field_2d: np.ndarray,
     vmin: Optional[float] = None,
@@ -25,6 +40,7 @@ def render_temperature_png(
     adaptive: bool = False,
     colormap_name: str = "magma",
     scale: int = 4,
+    fmt: str = "png",
 ) -> Tuple[bytes, float, float]:
     """
     Render 2D temperature grid to PNG bytes.
@@ -55,9 +71,7 @@ def render_temperature_png(
     if np.all(nan_mask):
         h, w = field_2d.shape
         img = Image.new("RGBA", (w * scale, h * scale), (0, 0, 0, 0))
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        return buf.getvalue(), 0.0, 32.0
+        return encode_image(img, fmt), 0.0, 32.0
 
     valid_vals = field_2d[~nan_mask]
 
@@ -102,6 +116,4 @@ def render_temperature_png(
         target_h = field_2d.shape[0] * scale
         img = img.resize((target_w, target_h), resample=Image.Resampling.BICUBIC)  # display smoothing only
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")  # optimize=True was 8x slower for ~10% smaller files
-    return buf.getvalue(), eff_vmin, eff_vmax
+    return encode_image(img, fmt), eff_vmin, eff_vmax

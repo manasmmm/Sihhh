@@ -332,6 +332,8 @@ export const App: React.FC = () => {
     <div className="relative flex-1 min-h-0 overflow-hidden">
       {/* 1. Base Map Layer */}
       <MapView
+        dates={metadata.dates.all_dates}
+        dataVersion={`${metadata.data_source}|${metadata.model_version ?? ''}|${metadata.per_date?.[metadata.dates.end ?? '']?.generated_at ?? ''}`}
         layer={mapLayer}
         onRangeChange={handleRangeChange}
         basemap={basemap}

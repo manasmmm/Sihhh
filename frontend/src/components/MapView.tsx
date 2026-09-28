@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { PinnedPoint, ArgoFloat, MapLayer } from '../types';
-import { getDerivedPngUrl } from '../api';
+import { getDerivedPngUrl, getFieldImageUrl } from '../api';
+import { loadImage, nearestFirst, pinImage, prefetchImages } from '../imageCache';
 import { BasemapId, DEFAULT_BASEMAP, useBasemap } from '../basemaps';
 
 interface MapViewProps {
@@ -18,6 +19,10 @@ interface MapViewProps {
   basemap?: BasemapId;
   /** Colour range the server used for the current temperature image (for the legend) */
   onRangeChange?: (vmin: number, vmax: number) => void;
+  /** All dates on the time slider (for preloading) */
+  dates?: string[];
+  /** Changes when the model output changes (cache-busting for images) */
+  dataVersion?: string;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
@@ -33,6 +38,8 @@ export const MapView: React.FC<MapViewProps> = ({
   layer = 'thetao',
   basemap = DEFAULT_BASEMAP,
   onRangeChange,
+  dates = [],
+  dataVersion = '',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<L.Map | null>(null);
@@ -44,7 +51,6 @@ export const MapView: React.FC<MapViewProps> = ({
   onMapClickRef.current = onMapClick;
   const onRangeChangeRef = useRef(onRangeChange);
   onRangeChangeRef.current = onRangeChange;
-  const objectUrlRef = useRef<string | null>(null);
 
   // Exact North Indian Ocean Domain Bounding Box (Section 1)
   const domainBounds: L.LatLngBoundsLiteral = [
@@ -120,56 +126,43 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   };
 
-  // Update the overlay image whenever the map, date, depth, contrast mode or layer changes.
-  // Temperature images are fetched (not just linked) so the colour range the server
-  // actually used (X-Vmin / X-Vmax headers) can be passed to the legend.
+  const imageUrlFor = (date: string) =>
+    layer === 'thetao'
+      ? getFieldImageUrl(date, currentDepth, adaptiveColor, dataVersion)
+      : getDerivedPngUrl(date, layer, 4, dataVersion);
+
+  // Show the image for the current date/depth/layer from the in-memory cache (downloading
+  // it if needed), pass the server's colour range to the legend, then preload the other
+  // days so moving the time slider is instant.
   useEffect(() => {
     if (!map) return;
-
-    if (layer !== 'thetao') {
-      showImage(getDerivedPngUrl(currentDate, layer));
-      return;
-    }
-
-    const url = `/api/v1/field.png?date=${encodeURIComponent(currentDate)}&depth=${currentDepth}&scale=4&adaptive=${adaptiveColor}`;
+    const url = imageUrlFor(currentDate);
     let cancelled = false; // a newer date/depth was requested before this one arrived
-    fetch(url)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const vmin = parseFloat(res.headers.get('X-Vmin') ?? '');
-        const vmax = parseFloat(res.headers.get('X-Vmax') ?? '');
-        const blob = await res.blob();
+    loadImage(url)
+      .then((img) => {
         if (cancelled) return;
-        const objectUrl = URL.createObjectURL(blob);
-        const previous = objectUrlRef.current;
-        objectUrlRef.current = objectUrl;
-        showImage(objectUrl);
-        if (previous) setTimeout(() => URL.revokeObjectURL(previous), 2000);
-        if (isFinite(vmin) && isFinite(vmax)) onRangeChangeRef.current?.(vmin, vmax);
+        pinImage(url);
+        showImage(img.url);
+        if (layer === 'thetao' && img.vmin !== null && img.vmax !== null) {
+          onRangeChangeRef.current?.(img.vmin, img.vmax);
+        }
+        prefetchImages(nearestFirst(dates, currentDate).map(imageUrlFor));
       })
       .catch((err) => {
         if (!cancelled) {
-          console.error('Failed to load temperature map:', err);
+          console.error('Failed to load map image:', err);
           showImage(url); // plain URL fallback; the legend keeps its last known range
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [map, currentDate, currentDepth, adaptiveColor, layer]);
+  }, [map, currentDate, currentDepth, adaptiveColor, layer, dataVersion, dates]);
 
   // Opacity changes only restyle the current image
   useEffect(() => {
     imageOverlayRef.current?.setOpacity(overlayOpacity);
   }, [overlayOpacity]);
-
-  // Free the last image when the map goes away
-  useEffect(
-    () => () => {
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    },
-    []
-  );
 
   // Update Pinned Points Markers
   useEffect(() => {

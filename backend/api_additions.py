@@ -119,19 +119,22 @@ def api_derived(date: str = Query(...), var: str = Query(...)):
 
 
 @router.api_route("/derived.png", methods=["GET", "HEAD"], tags=["Derived"])
-def api_derived_png(date: str = Query(...), var: str = Query(...), scale: int = Query(4, ge=1, le=8)):
+def api_derived_png(date: str = Query(...), var: str = Query(...), scale: int = Query(4, ge=1, le=8),
+                    format: str = Query("png", pattern="^(png|webp)$")):
     from derived_raster import render_derived_png
+    from raster import IMAGE_MEDIA_TYPES
     _check_var(var)
     _require_date(date)
     try:
         der = get_derived(date)
-        png, vmin, vmax = render_derived_png(der[var].values, var, scale=scale)
+        png, vmin, vmax = render_derived_png(der[var].values, var, scale=scale, fmt=format)
     except Exception as e:
         raise_clear(e)
-    headers = {"Cache-Control": "no-cache", "X-Vmin": str(vmin), "X-Vmax": str(vmax)}
+    # Cacheable: the dashboard adds a data-version parameter (v=...) that changes with new model output
+    headers = {"Cache-Control": "public, max-age=86400", "X-Vmin": str(vmin), "X-Vmax": str(vmax)}
     if var == "confidence":
         headers["X-Available"] = "1" if der.attrs.get("confidence_available") else "0"
-    return Response(content=png, media_type="image/png", headers=headers)
+    return Response(content=png, media_type=IMAGE_MEDIA_TYPES[format], headers=headers)
 
 
 @router.get("/derived/legend", tags=["Derived"])

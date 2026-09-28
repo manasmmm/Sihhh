@@ -30,7 +30,7 @@ from provider_facade import (
     get_timeseries_provider as get_timeseries,
     get_basin_average_provider as get_basin_average
 )
-from raster import render_temperature_png
+from raster import render_temperature_png, IMAGE_MEDIA_TYPES
 from model_bridge import LATS, LONS, DEPTHS_M, reconstruct_field
 from scripts.precompute import precompute_dataset
 from api_additions import router as additions_router, raise_clear
@@ -70,17 +70,17 @@ _PNG_LOCK = threading.Lock()
 
 
 def _field_png(date: str, depth: int, scale: int, adaptive: bool,
-               vmin: Optional[float], vmax: Optional[float]):
+               vmin: Optional[float], vmax: Optional[float], fmt: str = "png"):
     """(png_bytes, vmin, vmax), cached per data version, date and view settings."""
     from providers import get_provider
-    key = (get_provider().stamp(date), date, depth, scale, adaptive, vmin, vmax)
+    key = (get_provider().stamp(date), date, depth, scale, adaptive, vmin, vmax, fmt)
     with _PNG_LOCK:
         hit = _PNG_CACHE.get(key)
         if hit is not None:
             _PNG_CACHE.move_to_end(key)
             return hit
     field_2d = get_field_slice(date, depth)
-    out = render_temperature_png(field_2d, vmin=vmin, vmax=vmax, adaptive=adaptive, scale=scale)
+    out = render_temperature_png(field_2d, vmin=vmin, vmax=vmax, adaptive=adaptive, scale=scale, fmt=fmt)
     with _PNG_LOCK:
         _PNG_CACHE[key] = out
         while len(_PNG_CACHE) > _PNG_CACHE_MAX:
@@ -97,7 +97,7 @@ def _prewarm_field_pngs():
         dates = provider.cached_dates() if hasattr(provider, "cached_dates") else provider.available_dates()
         t0 = time.time()
         for d in dates[:_PNG_CACHE_MAX // 2]:
-            _field_png(d, 0, 4, True, None, None)
+            _field_png(d, 0, 4, True, None, None, "webp")  # what the dashboard requests
         print(f"Pre-rendered {len(dates[:_PNG_CACHE_MAX // 2])} surface maps in {time.time() - t0:.1f}s")
     except Exception as e:  # never block or crash start-up
         print(f"Map pre-rendering skipped: {e}")
@@ -126,19 +126,20 @@ def api_field_png(
     adaptive: bool = Query(False, description="Auto-stretch colormap contrast for this layer"),
     vmin: Optional[float] = Query(None, description="Optional minimum temperature override"),
     vmax: Optional[float] = Query(None, description="Optional maximum temperature override"),
+    format: str = Query("png", pattern="^(png|webp)$", description="Image format: png (default) or webp (about 5x smaller)"),
 ):
     """
     3.2 Returns a PNG image of the temperature field at date/depth with turbo colormap,
     transparent land cells (alpha=0), edge-to-edge for Leaflet ImageOverlay.
     """
     try:
-        png_bytes, eff_vmin, eff_vmax = _field_png(date, depth, scale, adaptive, vmin, vmax)
+        png_bytes, eff_vmin, eff_vmax = _field_png(date, depth, scale, adaptive, vmin, vmax, format)
         return Response(
             content=png_bytes,
-            media_type="image/png",
+            media_type=IMAGE_MEDIA_TYPES[format],
             headers={
                 "Cache-Control": "public, max-age=86400",
-                "Content-Disposition": f"inline; filename=thetao_{date}_{depth}m.png",
+                "Content-Disposition": f"inline; filename=thetao_{date}_{depth}m.{format}",
                 "X-Vmin": str(round(eff_vmin, 2)),
                 "X-Vmax": str(round(eff_vmax, 2)),
             },

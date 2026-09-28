@@ -103,8 +103,13 @@ export function fetchMeta(): Promise<Metadata> {
   return getJson<Metadata>(`${API_BASE}/meta`);
 }
 
-export function getDerivedPngUrl(date: string, variable: DerivedVar, scale: number = 4): string {
-  return `${API_BASE}/derived.png?date=${encodeURIComponent(date)}&var=${variable}&scale=${scale}`;
+/** WebP map images (about 5x smaller than PNG). `version` changes with new model output, so cached images are never stale. */
+export function getDerivedPngUrl(date: string, variable: DerivedVar, scale: number = 4, version: string = ''): string {
+  return `${API_BASE}/derived.png?date=${encodeURIComponent(date)}&var=${variable}&scale=${scale}&format=webp&v=${encodeURIComponent(version)}`;
+}
+
+export function getFieldImageUrl(date: string, depth: number, adaptive: boolean, version: string = ''): string {
+  return `${API_BASE}/field.png?date=${encodeURIComponent(date)}&depth=${depth}&scale=4&adaptive=${adaptive}&format=webp&v=${encodeURIComponent(version)}`;
 }
 
 const legendCache: Partial<Record<DerivedVar, Promise<DerivedLegendInfo>>> = {};
