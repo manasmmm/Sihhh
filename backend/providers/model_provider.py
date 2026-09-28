@@ -2,7 +2,7 @@
 ModelProvider (DATA_SOURCE = "model") - runs the OceanEmbed GNN-OAM model inside the backend.
 
 Uses the artifacts of the Kaggle notebook OceanEmbed-GNN-OAM-FULL.ipynb copied into
-backend/model_artifacts/ (checkpoint gnn_C_full_epoch_20.pt, the tree-stage models
+backend/model_artifacts/ (checkpoint gnn_C_full_epoch_28.pt, the tree-stage models
 rf_model_*.joblib, depth_cluster.json, season_regime.json and the cached, normalised
 surface inputs finetune*_x/_t/_meta). See backend/gnn_engine/.
 

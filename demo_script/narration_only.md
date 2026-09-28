@@ -18,7 +18,7 @@ OceanEmbed also goes beyond temperature. The layer menu turns each day into maps
 
 Stepping back, the basin mean chart tracks the average temperature of the whole region over time. The Argo layer marks Argo floats, robotic instruments that measure real temperature profiles as they drift. And you can choose from five background maps, and adjust how strongly the data is shown.
 
-A reconstruction is only useful if it can be trusted. The validation panel compares our output with the Glorys ocean reanalysis, on thirty one days in December twenty twenty four that the model never saw in training. In the upper thirty meters, the typical error is zero point six to zero point nine degrees Celsius, with a correlation of up to zero point nine one. Deeper in the thermocline, the error grows, and we show that honestly.
+A reconstruction is only useful if it can be trusted. The validation panel compares our output with the Glorys ocean reanalysis, on thirty one days in December twenty twenty four that the model never saw in training. In the upper thirty meters, the typical error is zero point seven to zero point nine degrees Celsius, with a correlation of up to zero point eight seven. Deeper in the thermocline, the error grows, and we show that honestly.
 
 Finally, the data does not stay locked inside the dashboard. Every day can be downloaded as a standard Net C D F file, together with a file of derived layers, including tropical cyclone heat potential. New model runs can be uploaded, and every file is checked before it appears.
 

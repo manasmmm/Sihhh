@@ -47,7 +47,7 @@ Open **`http://localhost:8000`** in any web browser.
 
 ## Connecting the Kaggle GNN-OAM model (OceanEmbed-GNN-OAM-FULL.ipynb)
 
-Two ways, both using checkpoint `gnn_C_full_epoch_20.pt` plus the tree (XGBoost) stage `rf_model_*.joblib`:
+Two ways, both using checkpoint `gnn_C_full_epoch_28.pt` plus the tree (XGBoost) stage `rf_model_*.joblib`:
 
 **A. Export on Kaggle, then drop the files in (small download, no ML libraries locally)**
 1. Paste `kaggle/export_for_dashboard.py` as the last cell of the notebook. Run Sections 1-17, plus 24-26 for 2024, then the new cell.
@@ -59,7 +59,7 @@ Two ways, both using checkpoint `gnn_C_full_epoch_20.pt` plus the tree (XGBoost)
 2. Copy the files listed in `backend/model_artifacts/README.md` into `backend/model_artifacts/`.
 3. Check the setup: `python scripts/run_gnn_inference.py --list`
 4. Optionally precompute a period and write real validation metrics: `python scripts/run_gnn_inference.py --start 2024-12-01 --end 2024-12-31 --validation`
-5. Start the backend with `DATA_SOURCE=model`. The badge reads "MODEL: OceanEmbed GNN-OAM C_full epoch 20 + XGBoost stage".
+5. Start the backend with `DATA_SOURCE=model`. The badge reads "MODEL: OceanEmbed GNN-OAM C_full epoch 28 + XGBoost stage".
 
 The backend port gives the same output as the notebook's own `reconstruct_day` (checked to 0.0 °C difference on test data). A day takes about 8 s on CPU the first time and is then served from `backend/data/gnn_output/`. The checkpoint name and model label are set in `backend/config.py` (`GNN_CHECKPOINT_NAME`, `GNN_MODEL_VERSION`).
 

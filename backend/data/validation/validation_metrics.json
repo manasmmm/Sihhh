@@ -2,112 +2,112 @@
   "status": "final",
   "reference": "GLORYS12 reanalysis (Copernicus), regridded to 0.25 deg / 15 standard depths - held-out days",
   "period": "2024-12-01 to 2024-12-31, 31 day(s) (2024 held-out split)",
-  "model_version": "OceanEmbed GNN-OAM C_full epoch 20 + XGBoost stage",
-  "checkpoint": "gnn_C_full_epoch_20.pt",
+  "model_version": "OceanEmbed GNN-OAM C_full epoch 28 + XGBoost stage",
+  "checkpoint": "gnn_C_full_epoch_28.pt",
   "metrics": [
     {
       "depth_m": 0,
-      "rmse_c": 0.8913,
-      "bias_c": 0.2625,
-      "corr": 0.8308,
+      "rmse_c": 0.932,
+      "bias_c": 0.3707,
+      "corr": 0.8282,
       "n": 367474
     },
     {
       "depth_m": 5,
-      "rmse_c": 0.7648,
-      "bias_c": -0.1186,
-      "corr": 0.8671,
+      "rmse_c": 0.7932,
+      "bias_c": -0.2585,
+      "corr": 0.87,
       "n": 367474
     },
     {
       "depth_m": 10,
-      "rmse_c": 0.6426,
-      "bias_c": 0.2875,
-      "corr": 0.9091,
+      "rmse_c": 0.7235,
+      "bias_c": 0.2699,
+      "corr": 0.8728,
       "n": 356159
     },
     {
       "depth_m": 20,
-      "rmse_c": 0.6663,
-      "bias_c": -0.1057,
-      "corr": 0.8799,
+      "rmse_c": 0.8263,
+      "bias_c": -0.1437,
+      "corr": 0.7969,
       "n": 347417
     },
     {
       "depth_m": 30,
-      "rmse_c": 0.6204,
-      "bias_c": -0.0616,
-      "corr": 0.8976,
+      "rmse_c": 0.862,
+      "bias_c": 0.0825,
+      "corr": 0.7869,
       "n": 337125
     },
     {
       "depth_m": 50,
-      "rmse_c": 1.0907,
-      "bias_c": -0.2685,
-      "corr": 0.7831,
+      "rmse_c": 1.1589,
+      "bias_c": 0.1641,
+      "corr": 0.7403,
       "n": 322369
     },
     {
       "depth_m": 75,
-      "rmse_c": 1.6231,
-      "bias_c": 0.3564,
-      "corr": 0.7375,
+      "rmse_c": 1.6276,
+      "bias_c": 0.5947,
+      "corr": 0.7619,
       "n": 309442
     },
     {
       "depth_m": 100,
-      "rmse_c": 1.7311,
-      "bias_c": -0.1567,
-      "corr": 0.7165,
+      "rmse_c": 1.7704,
+      "bias_c": 0.258,
+      "corr": 0.7094,
       "n": 302653
     },
     {
       "depth_m": 125,
-      "rmse_c": 1.8784,
-      "bias_c": 0.8231,
-      "corr": 0.6392,
+      "rmse_c": 1.9856,
+      "bias_c": 1.047,
+      "corr": 0.638,
       "n": 301072
     },
     {
       "depth_m": 150,
-      "rmse_c": 1.6902,
-      "bias_c": 0.477,
-      "corr": 0.5098,
+      "rmse_c": 1.6675,
+      "bias_c": 0.5637,
+      "corr": 0.558,
       "n": 299584
     },
     {
       "depth_m": 200,
-      "rmse_c": 1.41,
-      "bias_c": 0.2268,
-      "corr": 0.5816,
+      "rmse_c": 1.5032,
+      "bias_c": 0.4958,
+      "corr": 0.6093,
       "n": 296887
     },
     {
       "depth_m": 300,
-      "rmse_c": 2.0935,
-      "bias_c": 1.4587,
-      "corr": 0.3703,
+      "rmse_c": 1.8471,
+      "bias_c": 1.1851,
+      "corr": 0.4864,
       "n": 294252
     },
     {
       "depth_m": 500,
-      "rmse_c": 1.4039,
-      "bias_c": 0.6608,
-      "corr": 0.3061,
+      "rmse_c": 1.7343,
+      "bias_c": 1.2229,
+      "corr": 0.4806,
       "n": 289199
     },
     {
       "depth_m": 700,
-      "rmse_c": 1.1277,
-      "bias_c": 0.3507,
-      "corr": 0.4557,
+      "rmse_c": 1.0644,
+      "bias_c": 0.5077,
+      "corr": 0.6524,
       "n": 285510
     },
     {
       "depth_m": 1000,
-      "rmse_c": 1.8871,
-      "bias_c": 1.2248,
-      "corr": -0.3058,
+      "rmse_c": 1.8938,
+      "bias_c": 1.4088,
+      "corr": 0.0854,
       "n": 278163
     }
   ]
