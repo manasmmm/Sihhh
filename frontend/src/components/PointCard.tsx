@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { X, Download, MapPin, Loader2 } from 'lucide-react';
 import { PinnedPoint } from '../types';
+import { displayDate } from '../i18n';
 import { ProfileChart } from './ProfileChart';
 import { TimeseriesChart } from './TimeseriesChart';
 
@@ -135,7 +136,7 @@ export const PointCard: React.FC<PointCardProps> = ({
           >
             {currentDepth}m
           </span>
-          <span className="text-slate-600">{currentDate}</span>
+          <span className="text-slate-600">{displayDate(currentDate)}</span>
         </div>
       </div>
 

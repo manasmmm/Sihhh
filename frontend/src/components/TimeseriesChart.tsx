@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { TimeseriesResponse } from '../types';
+import { displayDate } from '../i18n';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -89,7 +90,7 @@ export const TimeseriesChart: React.FC<TimeseriesChartProps> = ({
                   const data = payload[0].payload;
                   return (
                     <div className="p-2 rounded bg-slate-900/95 border border-[#4fd1c5]/40 shadow-lg text-[11px] font-mono text-white">
-                      <div>Date: {data.date}</div>
+                      <div>Date: {displayDate(data.date)}</div>
                       <div className="text-[#4fd1c5] font-bold">
                         Temp: {data.temperature ?? 'N/A'} °C
                       </div>

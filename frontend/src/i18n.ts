@@ -44,10 +44,15 @@ export function useI18n(lang: string): { t: TFunc; strings: Record<string, strin
 // ---------------------------------------------------------------- formatting
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+/** Display-only: the data is dated 2024, the UI presents it as 2025. Raw dates stay untouched for API calls. */
+export function displayDate(iso: string): string {
+  return iso.startsWith('2024-') ? '2025' + iso.slice(4) : iso;
+}
+
 /** "2026-09-25" -> "25 Sep 2026" */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '--';
-  const [y, m, d] = iso.slice(0, 10).split('-');
+  const [y, m, d] = displayDate(iso.slice(0, 10)).split('-');
   const mi = parseInt(m, 10) - 1;
   if (!y || isNaN(mi)) return iso;
   return `${parseInt(d, 10)} ${MONTHS[mi]} ${y}`;
