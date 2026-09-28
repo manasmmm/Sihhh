@@ -6,7 +6,6 @@ import {
   Info,
   Trash2,
   Anchor,
-  ShieldCheck,
   Download,
   Upload,
   AlertTriangle,
@@ -20,7 +19,6 @@ import { PointCard } from './components/PointCard';
 import { Colorbar } from './components/Colorbar';
 import { BasinAverageModal } from './components/BasinAverageModal';
 import { TopBar, TabId } from './components/TopBar';
-import { ValidationPanel } from './components/ValidationPanel';
 import { DerivedLegend } from './components/DerivedLegend';
 import { FisheriesTab } from './components/FisheriesTab';
 import {
@@ -92,7 +90,6 @@ export const App: React.FC = () => {
     setBasemapState(id);
     saveBasemapChoice(id);
   }, []);
-  const [showValidation, setShowValidation] = useState<boolean>(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -527,18 +524,6 @@ export const App: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setShowValidation(!showValidation)}
-            className={`px-2 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1.5 transition-all duration-200 ${
-              showValidation
-                ? 'bg-gradient-to-r from-[#4fd1c5]/20 to-[#38bdf8]/15 text-[#4fd1c5] border border-[#4fd1c5]/35'
-                : 'bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 border border-transparent'
-            }`}
-          >
-            <ShieldCheck size={11} />
-            Validation
-          </button>
-          <button
-            type="button"
             onClick={() => uploadInputRef.current?.click()}
             disabled={busy !== null}
             title="Upload one thetao_YYYY-MM-DD.nc or .npy model output file (validated before saving)"
@@ -640,8 +625,6 @@ export const App: React.FC = () => {
     </div>
       )}
 
-      {/* Validation window (centred over the page) */}
-      {showValidation && activeTab === 'explorer' && <ValidationPanel onClose={() => setShowValidation(false)} />}
 
       {/* Download / upload result toast */}
       {toast && (
