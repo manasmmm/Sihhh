@@ -4,7 +4,7 @@ These are the raw artifacts from the Kaggle training run, kept as-is for referen
 
 | File | What it is |
 |---|---|
-| `gnn-oam-6-layer-FINAL.ipynb` | The Kaggle training notebook: data harmonisation, the RF/XGBoost tree stage, the GNN-OAM model, training loop, and evaluation. |
+| [`../gnn-oam-6-layer-FINAL.ipynb`](../gnn-oam-6-layer-FINAL.ipynb) | The Kaggle training notebook (now at the repository root): data harmonisation, the XGBoost tree stage, the GNN-OAM model, training loop, and evaluation. |
 | `Model-Weights.zip` | Trained weights: the `rf_model_*.joblib` tree-stage models plus `all_models.zip` (GNN-OAM checkpoints across epochs). |
 | `Model-Training-and-Tuning.zip` | Small supporting artifacts from the run: cluster/season lookup tables (`depth_cluster.json`, `season_regime.json`), cache metadata, and stats used to reproduce training exactly. |
 

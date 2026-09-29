@@ -315,8 +315,8 @@ Basin-wide daily subsurface temperature enables monsoon, heatwave and coral-blea
 
 ```
 Sihhh/
-├── 🧠 model/              Kaggle training notebook + trained GNN-OAM weights
-│   ├── gnn-oam-6-layer-FINAL.ipynb
+├── 📓 gnn-oam-6-layer-FINAL.ipynb   Kaggle training notebook (GNN-OAM model)
+├── 🧠 model/              trained GNN-OAM weights
 │   ├── Model-Weights.zip
 │   └── Model-Training-and-Tuning.zip
 ├── ⚙️ backend/            FastAPI server
