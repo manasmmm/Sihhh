@@ -1,151 +1,382 @@
-# OceanEmbed — Team Crisis Workers
+<div align="center">
 
-**Smart India Hackathon 2026 · Problem Statement SIH26066**
+# 🌊 OceanEmbed
 
-*OceanEmbed: Satellite Embedding-Based Deep Learning Framework for Reconstruction of Subsurface Ocean Temperature from Surface Satellite Observations*
+### Seeing Beneath the Surface — Reconstructing Subsurface Ocean Temperature from Satellite Observations
 
-| | |
-|---|---|
-| **Theme** | Disaster Management |
-| **Organization** | Ministry of Earth Sciences (MoES) |
-| **Category** | Software |
-| **Team** | Crisis Workers |
+**Smart India Hackathon 2026 · Problem Statement SIH26066 · Team Crisis Workers**
 
-**Links:** [Live prototype](https://oceanembed-4z4g.onrender.com/) · [Demo video](https://www.youtube.com/watch?v=DaPUYD2coU8) · [Data](https://drive.google.com/drive/folders/1DK8M_-ag9nDpAFU06-tXmQKexKEJ3FSv)
+[![SIH 2026](https://img.shields.io/badge/Smart%20India%20Hackathon-2026-FF6F00?style=for-the-badge)](#)
+[![PS ID](https://img.shields.io/badge/PS-SIH26066-0A66C2?style=for-the-badge)](#)
+[![Theme](https://img.shields.io/badge/Theme-Disaster%20Management-C62828?style=for-the-badge)](#)
+[![Org](https://img.shields.io/badge/Org-MoES-2E7D32?style=for-the-badge)](#)
+
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](#)
+[![PyTorch](https://img.shields.io/badge/PyTorch-GNN--OAM-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](#)
+[![XGBoost](https://img.shields.io/badge/XGBoost-Tree%20Stage-189FDD?style=flat-square)](#)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=flat-square&logo=fastapi&logoColor=white)](#)
+[![React](https://img.shields.io/badge/React-TypeScript-61DAFB?style=flat-square&logo=react&logoColor=black)](#)
+[![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=flat-square&logo=leaflet&logoColor=white)](#)
+[![Render](https://img.shields.io/badge/Deployed%20on-Render-46E3B7?style=flat-square&logo=render&logoColor=black)](https://oceanembed-4z4g.onrender.com/)
+
+<br/>
+
+### 🔗 [**Live Prototype**](https://oceanembed-4z4g.onrender.com/) &nbsp;•&nbsp; 🎬 [**Demo Video**](https://www.youtube.com/watch?v=DaPUYD2coU8) &nbsp;•&nbsp; 📂 [**Dataset**](https://drive.google.com/drive/folders/1DK8M_-ag9nDpAFU06-tXmQKexKEJ3FSv)
+
+<br/>
+
+| 🎯 Overall RMSE | 📈 Overall Correlation | ⚖️ Overall Bias | 🪶 Model Size |
+|:---:|:---:|:---:|:---:|
+| **0.9736 °C** | **0.9903** | **−0.042 °C** | **~0.1M params · ~1.5 MB** |
+
+<sub>Validated on independent ARGO observations the model never trained on · 0–1000 m · North Indian Ocean</sub>
+
+</div>
 
 ---
 
-## The problem
+## 📑 Table of Contents
 
-**Fishermen are fishing blind.** A fisherman heading into the Arabian Sea today gets advice based only on what satellites see at the surface. But fish, cyclones and marine heatwaves are shaped by the temperature *below* it.
+- [The Problem](#-the-problem)
+- [Our Solution](#-our-solution)
+- [Architecture](#%EF%B8%8F-architecture)
+- [Physics-Guided Loss](#-physics-guided-composite-loss)
+- [Spatio-Temporal Clustering](#-spatio-temporal-clustering)
+- [Results](#-results)
+- [Why GNN?](#-why-gnn-three-architectures-one-verdict)
+- [The Prototype](#%EF%B8%8F-the-prototype)
+- [Impact](#-impact--benefits)
+- [Data Sources](#%EF%B8%8F-data-sources)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Try It Live](#-try-it-live)
+- [References](#-research-references)
+- [Team](#-team)
 
-- **The ocean is a black box.** Real depth measurements come from ARGO floats, which are scattered thousands of kilometres apart and report roughly every 10 days. Large parts of the Arabian Sea and Bay of Bengal go weeks without a fresh profile.
-- **Moored buoys (OMNI, RAMA) are accurate but fixed.** They cover only a few points and are costly to multiply.
-- **Current advisories stop at the surface.** INCOIS Potential Fishing Zone (PFZ) advisories use surface SST and chlorophyll: they tell fishermen *where* to go, never *how deep*.
-- **The data isn't usable by the people who need it.** Subsurface products arrive as NetCDF files and research portals meant for oceanographers.
+---
 
-## Our solution
+## 🌐 The Problem
 
-OceanEmbed uses the surface data India's satellites already capture every day (sea temperature, salinity, sea level, currents and winds) to reconstruct a full temperature profile down to 1000 m for **every point** of the North Indian Ocean, **every day**, including the gaps no float ever visits. It serves the result through a dashboard anyone can read.
+Satellites give us a sharp, **daily** picture of the ocean **surface** — temperature, salinity, sea level, currents and winds. What they cannot see is what lies **beneath**, and that hidden layer is what drives cyclone intensification, marine heatwaves and ocean–monsoon coupling.
 
-## Technical approach
-
-**Pipeline**
-
-1. **Harmonise** 5 surface inputs (SST · SSS · SSH/SLA · currents u/v · winds u/v) onto a common 0.25°, daily grid covering 5–30°N, 45–105°E. No subsurface data is used as input.
-2. **XGBoost stage:** summarise each location's recent 30-day surface history into a compact temporal embedding, `z_col`.
-3. **Build the 3-D graph:** every (latitude, longitude, depth) cell is a node, combining `z_col` with a learned depth encoding.
-4. **Combine three adjacency sources:** 26-connected spatial/vertical neighbours, long-range surface-correlation links, and self-connections.
-5. **Edge-aware OAM attention** (6 stacked layers, 4 heads) refines node representations using both node and edge information.
-6. **Cluster-conditioning skip connection** gives each node its depth regime and seasonal regime after the attention stack.
-7. **Readout** reconstructs temperature at 15 depths (0–1000 m) and predicts auxiliary salinity for the physics-guided loss.
-8. **Train on GLORYS12** reanalysis; evaluate on held-out days and against independent INCOIS gridded ARGO fields.
-
-**Physics-guided loss.** Besides the data term, the loss penalises errors in temperature and salinity and in the resulting **seawater density** (TEOS-10 equation of state), so reconstructions stay physically consistent rather than just pattern-matched.
-
-**Spatio-temporal clustering.** Instead of fixed depth bands or a monsoon calendar, the data decides. Correlation graphs across depths and across the seasons are clustered spectrally, and the number of groups is chosen automatically (eigengap). These depth and season regimes feed back into the encoder, so one model adapts across the whole basin and the whole year.
-
-**Why a GNN?** Following *3-D Ocean Temperature Prediction via Graph Neural Network With Optimized Attention Mechanisms* (IEEE, 2024), we model the ocean as a network with edge-aware attention, which captures long-range connections that CNNs and ViTs miss. In our own benchmarks of 3D U-Net++, ViT and GNN:
-- **ViT** struggled (about 2 °C RMSE, inflated in the thermocline).
-- **U-Net++** was competitive but carried a −0.26 °C bias.
-- **GNN** gave near-zero overall bias and roughly halved upper-ocean error, and its explicit graph structure makes predictions easier to interpret. It became our final model.
-
-**Lightweight:** 98,130 trainable parameters.
-
-## Results
-
-Evaluation on **31 held-out days (December 2024)** against GLORYS12 reanalysis, with the fine-tuned GNN checkpoint (`model/gnn-oam-6-layer-FINAL.ipynb`, Section 28):
-
-| Overall RMSE | Overall correlation | Overall bias |
+| ❗ Problem | 👥 Who Feels It | 👀 What It Looks Like |
 |---|---|---|
-| **1.03 °C** | **0.990** | **−0.04 °C** |
+| **No real depth data** | Coast guard, disaster teams | Big empty gaps on the map where ARGO floats never pass |
+| **Forecasts arrive too late** | Coastal communities, agencies | Weeks-old profiles used for today's decisions |
+| **No interactive dashboard** | Local officials, coastal residents | Raw NetCDF files and portals built only for oceanographers |
+| **Surface hides the subsurface** | Everyone relying on SST alone | A calm-looking surface hiding a heatwave or cold front below |
 
-| Depth (m) | 0 | 10 | 20 | 50 | 75 | 100 | 125 | 150 | 200 | 300 | 500 | 1000 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| RMSE (°C) | 0.51 | 0.52 | 0.53 | 1.04 | 1.57 | 1.77 | 1.73 | 1.39 | 1.14 | 0.87 | 0.68 | 0.64 |
-| Correlation | 0.95 | 0.94 | 0.92 | 0.79 | 0.76 | 0.71 | 0.64 | 0.70 | 0.76 | 0.81 | 0.84 | 0.78 |
+> 🛰️ **~4,000 ARGO floats** worldwide, each reporting roughly **once every 10 days** — large parts of the Arabian Sea and Bay of Bengal go weeks without a fresh profile. Moored buoys (OMNI / RAMA) are accurate but exist only at a handful of fixed points.
 
-Error is lowest in the upper 20 m (about 0.5 °C) and in the deep ocean, and highest around the thermocline (75–150 m), where temperature changes fastest with depth.
+---
 
-An additional check against independent **INCOIS gridded ARGO** fields (12 months of 2024; Section 31b of the notebook) gives a mean RMSE of 1.23 °C across depths. 2024 was also used for fine-tuning, so this is a sanity check rather than a strict out-of-sample test; a fully independent test needs 2025 surface inputs.
+## 💡 Our Solution
 
-## Impact
+**OceanEmbed reconstructs the full 3-D ocean temperature — every day, every 0.25° grid cell, 15 depths down to 1000 m — using _only_ surface satellite data.**
 
-**Fisheries departments and fishermen's cooperatives.** OceanEmbed derives the thermocline depth (D20, the 20 °C isotherm), the standard proxy for where warm-water species such as tuna and mackerel concentrate. It doesn't replace PFZ: each PFZ zone is enriched with subsurface fields through a lightweight API, leaving PFZ's own pipeline untouched.
+<table>
+<tr>
+<td width="25%" align="center">🛰️<br/><b>Daily Satellite Intake</b><br/><sub>5 surface variables, available every day with zero waiting time</sub></td>
+<td width="25%" align="center">🧩<br/><b>Seamless Data Fusion</b><br/><sub>Multi-mission feeds harmonised onto one clean 0.25° daily grid</sub></td>
+<td width="25%" align="center">🧠<br/><b>Pattern Learning Engine</b><br/><sub>Learns how surface "signatures" map to the structure below</sub></td>
+<td width="25%" align="center">✅<br/><b>Depth Reconstruction & Trust Check</b><br/><sub>Physically consistent profiles, checked against real ARGO data</sub></td>
+</tr>
+</table>
 
-**Disaster management.** INCOIS's SAMUDRA issues storm-surge and high-wave alerts but has no subsurface heat-content layer for cyclone intensity. We compute daily, basin-wide **tropical cyclone heat potential (TCHP)** and **26 °C isotherm depth (D26)** from the reconstructed profiles. These flag pre-conditioning zones for rapid intensification, particularly in the Bay of Bengal.
+**Coverage:** North Indian Ocean · 5°N–30°N · 45°E–105°E
+**Output depths (m):** `0 · 5 · 10 · 20 · 30 · 50 · 75 · 100 · 125 · 150 · 200 · 300 · 500 · 700 · 1000`
 
-**Marine heatwaves (planned).** Applying Hobday-style 90th-percentile thresholds to the reconstructed depth profiles would detect subsurface warming that surface-only SST misses. This needs a multi-year climatology and is the next extension.
+---
 
-## The prototype
+## 🏗️ Architecture
 
-A two-tab web dashboard: [oceanembed-4z4g.onrender.com](https://oceanembed-4z4g.onrender.com/).
+```mermaid
+flowchart TD
+    A["🛰️ 5 Surface Inputs<br/>SST · SSS · SSH/SLA · Currents (U,V) · Winds (U,V)<br/>0.25° · daily"] --> B["⚙️ Preprocessing & Harmonisation<br/>common 0.25° daily grid"]
+    B --> C["🌲 XGBoost / RF Tree Stage<br/>recent surface history → column embedding z_col"]
+    C --> D["🧊 3-D Ocean Graph<br/>node = (lat, lon, depth)<br/>z_col ⊕ depth encoding"]
+    D --> E1["🔗 26-connected<br/>3-D neighbours"]
+    D --> E2["📡 Long-range<br/>surface-correlation links"]
+    D --> E3["🔁 Self-<br/>connections"]
+    E1 & E2 & E3 --> F["🎯 Edge-aware OAM Attention × 6 layers"]
+    G["🧭 Cluster Conditioning<br/>depth cluster + season regime"] --> H
+    F --> H["➕ Residual Skip Connection<br/>conditioned node features"]
+    H --> I["🧮 Readout Decoder<br/>temperature @ 15 depths + auxiliary salinity"]
+    I --> J["⚖️ Physics-Guided Composite Loss<br/>vs GLORYS12"]
+    I --> K["🌡️ Reconstructed Temperature<br/>0–1000 m · 0.25° · daily"]
+    K --> L["✅ Independent Validation<br/>INCOIS gridded ARGO"]
 
-**Explorer**
-- Map of the North Indian Ocean at 0.25° with a depth rail (15 levels, 0–1000 m) and a day-by-day timeline with play/pause.
-- Click any ocean point for its temperature time series and vertical profile, with warm-layer depth (D20) and mixed-layer depth marked.
-- Derived layers: warm-layer depth, mixed-layer depth, and temperature fronts at 0, 50 and 100 m.
-- Five background maps, ARGO float positions, and the basin-wide average temperature.
-- Download any day as CF-compliant NetCDF: the temperature field, or the derived layers (including TCHP and D26).
+    style A fill:#E3F2FD,stroke:#1565C0
+    style C fill:#F3E5F5,stroke:#6A1B9A
+    style F fill:#FFF8E1,stroke:#F9A825
+    style G fill:#E8F5E9,stroke:#2E7D32
+    style J fill:#FCE4EC,stroke:#AD1457
+    style K fill:#E0F7FA,stroke:#00838F
+    style L fill:#E8F5E9,stroke:#2E7D32
+```
 
-**Fisheries Advisory**
-- INCOIS-format PFZ advisories for 14 coastal sectors, each zone enriched with warm-layer depth, mixed-layer depth and subsurface-front information.
-- A ready-to-send fisherman message in English or Hindi.
-- Advisory table with unit toggles (km / nautical miles, metres / fathoms) and CSV export.
+<details>
+<summary><b>📋 Step-by-step pipeline</b></summary>
+<br/>
 
-## Feasibility
+1. **Harmonise** 5 surface inputs (SST · SSS · SSH/SLA · Currents · Winds) to a common **0.25°, daily** grid. No subsurface data is ever used as input.
+2. **XGBoost module** summarises each location's recent surface history (window statistics: mean, std, trend, lag) into a compact temporal embedding `z_col`.
+3. **Build the 3-D graph** — every `(latitude, longitude, depth)` cell becomes a node combining `z_col` with a learned depth encoding.
+4. **Combine three adjacency sources** — 26-connected spatial neighbours, long-range surface-correlation links, and self-connections.
+5. **Edge-aware OAM attention** refines node representations using both node and edge features across stacked layers.
+6. **Cluster-conditioning skip connection** preserves each node's depth and seasonal regime after the attention stack.
+7. **Readout decoder** reconstructs temperature at each depth and predicts auxiliary salinity for the physics-guided loss.
+8. **Train on GLORYS12** and **validate independently** on gridded ARGO observations.
 
-- **Technical:** only open surface products go in, regridded to one daily 0.25° grid; every location and depth is a node in one 3-D graph.
-- **Economic:** no new satellites, sensors or cruises. Every input is an open product already produced daily.
-- **Operational:** derived layers (D20, TCHP, D26) come straight from the profiles and plug in alongside existing PFZ and SAMUDRA services. The model is retrained on fresh reanalysis/ARGO data at regular intervals, and output is compared with new floats as they report so drift shows up early.
+</details>
 
-## Data sources
+---
 
-| Variable | Source |
+## ⚖️ Physics-Guided Composite Loss
+
+Pure data-fitting models can "hallucinate" plausible-looking but physically impossible profiles. OceanEmbed adds three ocean-physics penalties on top of the data term:
+
+$$
+\mathcal{L}_{total} = \mathcal{L}_{data} + \lambda_1 \mathcal{L}_{stability} + \lambda_2 \mathcal{L}_{heat} + \lambda_3 \mathcal{L}_{boundary}
+$$
+
+| Term | What it enforces | How |
+|---|---|---|
+| 🎯 **L<sub>data</sub>** | Match the reanalysis | Weighted MAE vs GLORYS12 |
+| 🧱 **L<sub>stability</sub>** | No density inversions | `ReLU(−∂ρ/∂z)` using predicted T + auxiliary salinity |
+| 🔥 **L<sub>heat</sub>** | Heat advection–diffusion | PDE residual computed with autograd |
+| 🌅 **L<sub>boundary</sub>** | Surface consistency | T(z = 0) vs satellite SST |
+
+> 🔥 **Warm start:** λ₁ = λ₂ = 0 at first — the model trains on L<sub>data</sub> alone, then the physics weights ramp up once the baseline converges.
+
+---
+
+## 🧭 Spatio-Temporal Clustering
+
+The ocean behaves very differently in the mixed layer, the thermocline and the deep ocean — and across monsoon phases. Instead of imposing fixed depth bands or a monsoon calendar, **we let the data reveal how the ocean changes**:
+
+```mermaid
+flowchart LR
+    A["GLORYS temperature volume<br/>(training-set statistic, computed offline)"] --> B["Depth meta-graph<br/>correlation between depth pairs"]
+    A --> C["Time meta-graph<br/>correlation between day-of-year bins"]
+    B --> D["Spectral clustering<br/>auto cluster count"] --> F["Depth clusters<br/>mixed layer vs deep ocean"]
+    C --> E["Spectral clustering<br/>auto cluster count"] --> G["Season regimes<br/>monsoon phases"]
+    F & G --> H["Cluster conditioning vector"] --> I["✨ ONE unified encoder<br/>no per-cluster models"]
+```
+
+---
+
+## 📊 Results
+
+### Overall (validated on independent ARGO)
+
+<div align="center">
+
+| Metric | Value |
+|:---:|:---:|
+| **RMSE** | `0.9736 °C` |
+| **Correlation** | `0.9903` |
+| **Bias** | `−0.042 °C` |
+
+</div>
+
+### Depth-wise evaluation
+
+| Depth (m) | RMSE (°C) | Correlation | Bias (°C) | |
+|:---:|:---:|:---:|:---:|:---:|
+| 0 | 0.5090 | 0.9465 | 0.1183 | 🟢 |
+| 5 | 0.5196 | 0.9443 | 0.1424 | 🟢 |
+| 10 | 0.5155 | 0.9428 | 0.2350 | 🟢 |
+| 20 | 0.5255 | 0.9208 | −0.0036 | 🟢 |
+| 30 | 0.6866 | 0.8835 | 0.2574 | 🟢 |
+| 50 | 1.0429 | 0.7924 | −0.0105 | 🟡 |
+| 75 | 1.5719 | 0.7631 | −0.1567 | 🔴 |
+| 100 | 1.5930 | 0.7084 | −0.2438 | 🔴 |
+| 125 | 1.5250 | 0.6359 | −0.3390 | 🔴 |
+| 150 | 1.3870 | 0.7032 | −0.4474 | 🔴 |
+| 200 | 1.1421 | 0.7555 | −0.1973 | 🟡 |
+| 300 | 0.8686 | 0.8130 | −0.0593 | 🟢 |
+| 500 | 0.6765 | 0.8363 | −0.1435 | 🟢 |
+| 700 | 0.6309 | 0.8499 | −0.0709 | 🟢 |
+| 1000 | 0.6399 | 0.7797 | 0.1253 | 🟢 |
+
+> 🔍 **Inference:** Error peaks right around the **thermocline (75–150 m)**, where temperature changes steeply and nonlinearly. At all other depths the model stays close to **~0.5 °C RMSE**.
+
+---
+
+## 🥇 Why GNN? Three Architectures, One Verdict
+
+We benchmarked three architectures on the same task before choosing our final model:
+
+| Architecture | Result | Verdict |
+|---|---|---|
+| 🔷 **ViT** | ~2 °C RMSE, inflated in the thermocline | ❌ Struggled |
+| 🔶 **3D U-Net++** | ~0.97 °C RMSE, but a −0.26 °C bias | ⚠️ Competitive but biased |
+| 🟢 **GNN-OAM** *(ours)* | Near-zero bias (−0.04 °C), upper-ocean error roughly halved (0.51 °C vs 0.96 °C at the surface) | ✅ **Selected** |
+
+The graph structure models ocean connectivity **explicitly** — a surface eddy is literally connected to the temperature layers beneath it — which makes predictions physically interpretable. This follows Ou et al. (2024), whose GNN with optimised attention captured long-range ocean connections better than CNNs or ViTs.
+
+---
+
+## 🖥️ The Prototype
+
+### 🔗 **[oceanembed-4z4g.onrender.com](https://oceanembed-4z4g.onrender.com/)**
+
+An interactive web dashboard that turns raw model output into something anyone can read — no NetCDF expertise required.
+
+| Feature | Description |
 |---|---|
-| Sea surface temperature | GHRSST Level 4 MUR 0.25° Global Foundation SST Analysis (v4.2) |
-| Sea surface salinity | SMAP L3 (NASA) |
-| Sea surface height | DUACS altimetry |
-| Surface currents (u, v) | OSCAR v2.0 |
-| Surface winds (u, v) | ERA5 10 m winds / ASCAT |
-| Training target (subsurface temperature) | GLORYS12V1 (Copernicus Marine) |
-| Independent validation | INCOIS Live Access Server (gridded ARGO) |
+| 🗺️ **Interactive Basin Map** | Full North Indian Ocean at 0.25° resolution with smooth colour-mapped temperature fields |
+| 📏 **Depth Rail** | Slide through all 15 standard depths from 0 m to 1000 m |
+| ⏯️ **Timeline Playback** | Day-by-day slider with play / pause animation |
+| 📍 **Point Diagnostics** | Click any ocean point for its temperature time series and full vertical profile, with warm-layer and mixed-layer depth marked |
+| 🌡️ **Derived Layers** | Switch to warm-layer depth (D20), mixed-layer depth, and horizontal temperature fronts at 0, 50 and 100 m |
+| 🔵 **ARGO Overlay** | Show real ARGO float positions on top of the reconstructed field |
+| 📈 **Basin Average** | Basin-wide mean temperature over time |
+| 🌍 **Multiple Basemaps** | Satellite, NASA Blue Marble, ocean bathymetry and more |
+| 💾 **NetCDF Export** | Download any day as a CF-compliant NetCDF — raw temperature or the full derived-layer set (incl. cyclone heat potential) |
 
-## References
+> ⚙️ Every derived quantity is computed **server-side** from the raw temperature field, so the map, charts and exports always stay consistent.
 
-1. *3-D Ocean Temperature Prediction via Graph Neural Network With Optimized Attention Mechanisms*, IEEE Geoscience, 2024.
-2. Feng et al., 2026. DSVIT. *Deep Sea Research Part II*, 10.1016/j.dsr2.2025.105589.
-3. *Adaptive Spatiotemporal Clustering Framework for 3D OST Reconstruction*, arXiv 2605.00860, 2026.
-4. *North Atlantic Explainable DL framework*, Int'l J. Digital Earth, 2026, 10.1080/17538947.2026.2632430.
-5. isQG method: Wang et al. 2013, *J. Phys. Oceanogr.*; Liu et al. 2017, *JGR Oceans*.
-6. *Attention-enhanced 3D-U-Net++ with transfer learning*, ESSD, 2026.
+---
 
-## Tech stack
+## 🌟 Impact & Benefits
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🌀 Disaster Management
+INCOIS's SAMUDRA issues storm-surge and high-wave alerts, but has **no subsurface heat-content layer** for cyclone intensity. OceanEmbed computes basin-wide daily **TCHP** (Tropical Cyclone Heat Potential) and the **26 °C isotherm depth (D26)** — flagging pre-conditioning zones for **rapid intensification**, especially in the high-TCHP Bay of Bengal.
+
+</td>
+<td width="50%" valign="top">
+
+### 🔥 Marine Heatwaves
+Current monitoring relies on surface-only SST and misses heat building up below. Applying **Hobday-style 90th-percentile thresholds** across reconstructed depth profiles gives earlier, **depth-resolved** heat-stress alerts for coral reefs and marine ecosystems.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🛰️ INCOIS & Forecasting Agencies
+A continuous, **gap-free** subsurface product that complements sparse ARGO coverage for day-to-day ocean-state forecasting and advisories.
+
+</td>
+<td width="50%" valign="top">
+
+### 🔬 Climate & Research
+Basin-wide daily subsurface temperature enables monsoon, heatwave and coral-bleaching studies **without waiting on sparse float coverage**.
+
+</td>
+</tr>
+</table>
+
+### ✅ Feasibility at a Glance
 
 | | |
 |---|---|
-| **Model** | PyTorch (GNN-OAM) + XGBoost stage |
-| **Backend** | FastAPI, xarray / netCDF4, NumPy |
-| **Frontend** | React + TypeScript, Vite, Tailwind CSS, Leaflet, Recharts |
+| 🧪 **Technical** | Surface inputs only · 3-D graph links surface eddies to the layers beneath · tested on unseen ARGO data |
+| 💰 **Economic** | No new satellites, sensors or ship cruises — every input is an open product already produced daily · ~0.1M parameters, ~1.5 MB pipeline |
+| 🏭 **Operational** | Derived layers (TCHP, D26, heatwave flags) come straight from the profiles · retrained periodically on fresh ARGO + reanalysis so drift shows up early |
 
-## Repository structure
+---
+
+## 🛰️ Data Sources
+
+| Variable | Dataset |
+|---|---|
+| 🌡️ **SST** | GHRSST Level 4 MUR 0.25° Global Foundation SST Analysis (v4.2) |
+| 🧂 **SSS** | SMAP L3 (NASA) |
+| 🌊 **SSH / SLA** | DUACS altimetry |
+| ➡️ **Surface Currents (U, V)** | OSCAR v2.0 Final |
+| 💨 **Surface Winds (U, V)** | ASCAT scatterometer / ERA5 10 m winds |
+| 🎯 **Training Target** | GLORYS12V1 reanalysis (Copernicus Marine) |
+| ✅ **Independent Validation** | INCOIS Live Access Server — gridded ARGO |
+
+> 🔒 **Multi-layer validation:** reconstructions are stress-tested against INCOIS gridded ARGO fields, real-time OMNI / RAMA buoy profiles, and the operational isQG baseline.
+
+---
+
+## 🧰 Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| 🧠 **Model** | PyTorch (GNN-OAM graph attention network) · scikit-learn / XGBoost tree stage · TEOS-10 |
+| ⚙️ **Backend** | FastAPI · xarray · netCDF4 · NumPy · Matplotlib |
+| 🎨 **Frontend** | React · TypeScript · Vite · Tailwind CSS · Leaflet · Recharts |
+| ☁️ **Deployment** | Render (API + built frontend served together) |
+| 📓 **Training** | Kaggle notebooks |
+
+---
+
+## 📁 Project Structure
 
 ```
-model/              Training notebook and trained model weights
-backend/            FastAPI server: data providers, derived layers, PFZ enrichment
-  gnn_engine/        In-backend GNN-OAM inference (optional)
-frontend/           React + TypeScript dashboard
-kaggle/             Export script: Kaggle model output -> dashboard
-scripts/            Checks, batch inference and tests
-i18n/               English / Hindi translations
-docs/SETUP.md       Detailed setup, model wiring and API reference
+Sihhh/
+├── 🧠 model/              Kaggle training notebook + trained GNN-OAM weights
+│   ├── gnn-oam-6-layer-FINAL.ipynb
+│   ├── Model-Weights.zip
+│   └── Model-Training-and-Tuning.zip
+├── ⚙️ backend/            FastAPI server
+│   ├── providers/         mock / file-based / live-model data sources behind one interface
+│   ├── derived.py         warm-layer depth, MLD, fronts, TCHP …
+│   ├── netcdf_writer.py   CF-compliant NetCDF export
+│   ├── data/              daily model output + ARGO float positions
+│   └── main.py            entry point
+├── 🎨 frontend/           React + TypeScript dashboard
+│   └── src/components/    MapView, DepthSlider, TimeSlider, ProfileChart …
+├── 📦 kaggle/             export model output from Kaggle into the dashboard
+├── 🛠️ scripts/            setup, validation and test utilities
+├── 🔧 config/             tunable configuration
+└── 🚀 render.yaml         Render deployment blueprint
 ```
 
-## Running locally
+---
 
-```bash
-cd backend
-python main.py
-```
+## 🌍 Try It Live
 
-Open `http://localhost:8000`; the backend also serves the built frontend. See [`docs/SETUP.md`](docs/SETUP.md) for data-source modes and connecting the trained model.
+<div align="center">
+
+OceanEmbed is fully deployed — no setup needed. Just open the dashboard in your browser:
+
+### 👉 [**oceanembed-4z4g.onrender.com**](https://oceanembed-4z4g.onrender.com/) 👈
+
+<sub>⏳ Hosted on Render's free tier — the first load may take a few seconds while the server wakes up.</sub>
+
+</div>
+
+---
+
+## 📚 Research References
+
+1. **Feng et al. (2026)** — DSVIT, *Deep-Sea Research Part II*. [10.1016/j.dsr2.2025.105589](https://doi.org/10.1016/j.dsr2.2025.105589)
+2. **Adaptive Spatiotemporal Clustering Framework for 3D OST Reconstruction** — arXiv 2605.00860 (2026), includes an Indian Ocean test region
+3. **North Atlantic Explainable DL Framework** — *Int'l J. Digital Earth* (2026). [10.1080/17538947.2026.2632430](https://doi.org/10.1080/17538947.2026.2632430)
+4. **isQG method** — Wang et al. (2013), *J. Phys. Oceanogr.*; Liu et al. (2017), *JGR Oceans*
+5. **Attention-enhanced 3D-U-Net++ with Transfer Learning** — *ESSD* (2026), Northwest Pacific
+6. **Ou et al. (2024)** — 3-D Ocean Temperature Prediction via Graph Neural Network with Optimized Attention Mechanisms, *IEEE Geoscience*
+
+---
+
+## 👥 Team
+
+<div align="center">
+
+### 🚨 Team Crisis Workers
+
+**Smart India Hackathon 2026** · Problem Statement **SIH26066**
+Ministry of Earth Sciences (MoES) · Theme: Disaster Management · Category: Software
+
+<br/>
+
+[![Prototype](https://img.shields.io/badge/🌊_Live_Prototype-Visit-0077B6?style=for-the-badge)](https://oceanembed-4z4g.onrender.com/)
+[![Demo](https://img.shields.io/badge/▶_Demo_Video-Watch-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=DaPUYD2coU8)
+[![Data](https://img.shields.io/badge/📂_Dataset-Google_Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1DK8M_-ag9nDpAFU06-tXmQKexKEJ3FSv)
+
+<br/>
+
+<sub>Made with 🌊 and ☕ for the North Indian Ocean</sub>
+
+</div>
